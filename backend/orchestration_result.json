@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "assignmentId": "6994665399d7a5e94ee56617",
+  "hospital": {
+    "id": "699460e4f9c1fe02324ae8dc",
+    "name": "Northside Trauma Center",
+    "eligible": true,
+    "location": {
+      "lat": 29.7,
+      "lng": 77.01,
+      "address": "45 North Ave, Test City"
+    },
+    "distance": 2.95,
+    "icuAvailable": 8,
+    "status": "active",
+    "score": 134.11
+  },
+  "ambulance": {
+    "id": "69945bfcead80f27a4fe6c47",
+    "vehicleNumber": "DL-01-TEST-1234",
+    "type": "ALS",
+    "distance": 120.44,
+    "location": {
+      "lat": 28.614,
+      "lng": 77.21
+    }
+  },
+  "alternatives": []
+}
