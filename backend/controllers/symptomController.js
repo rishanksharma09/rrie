@@ -72,7 +72,7 @@ Return EXACTLY this JSON format:
         `;
 
         const response = await client.models.generateContent({
-            model: 'gemini-2.5-flash-lite',
+            model: 'gemini-flash-latest',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',

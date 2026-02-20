@@ -121,6 +121,25 @@ export const initSocketService = (io) => {
             }
         });
 
+        // Complete Mission - Driver resets to Available
+        socket.on('complete_mission', async ({ ambulanceId, assignmentId }) => {
+            console.log(`[Socket] Mission complete request: Ambulance=${ambulanceId}, Assignment=${assignmentId}`);
+            try {
+                // Reset ambulance to available
+                await Ambulance.findByIdAndUpdate(ambulanceId, { status: 'Available' });
+
+                // Mark assignment as completed
+                if (assignmentId) {
+                    await Assignment.findByIdAndUpdate(assignmentId, { status: 'Completed' });
+                }
+
+                socket.emit('mission_completed', { status: 'Available' });
+                console.log(`[Socket] Driver ${ambulanceId} reset to Available.`);
+            } catch (error) {
+                console.error(`[Socket] Complete mission error:`, error);
+            }
+        });
+
         // Disconnect Handling
         socket.on('disconnect', async () => {
             console.log(`[Socket] Disconnected: ${socket.id}`);
