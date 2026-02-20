@@ -16,6 +16,8 @@ const UserPortal = () => {
     const [activeTab, setActiveTab] = useState<'analyze' | 'bookings'>('analyze');
     const [bookings, setBookings] = useState<any[]>([]);
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+    const [hospitalAlertSent, setHospitalAlertSent] = useState(false);
+    const [sendingAlert, setSendingAlert] = useState(false);
     const { user, login, logout } = useAuthStore();
     const recognitionRef = useRef<any>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +33,7 @@ const UserPortal = () => {
 
     interface ReferralResult {
         hospital: string;
+        hospitalId?: string;
         hospitalAddress?: string;
         hospitalContact?: string;
         assignmentReason?: string;
@@ -85,6 +88,44 @@ const UserPortal = () => {
             }
         };
     }, []);
+
+    // Initialize socket as soon as user logs in (not on tab switch)
+    useEffect(() => {
+        if (!user || socketRef.current) return;
+
+        const socket = io('http://localhost:5000');
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+            console.log("[Socket] User portal connected:", socket.id);
+            socket.emit('register_user', { userId: user.uid });
+        });
+
+        // Live ambulance location
+        socket.on('DRIVER_LIVE_LOCATION', (data) => {
+            console.log("[Socket] Live location update:", data);
+            if (ambulanceMarkerRef.current && mapRef.current) {
+                const newCoords: [number, number] = [data.coordinates[0], data.coordinates[1]];
+                ambulanceMarkerRef.current.setLngLat(newCoords);
+                mapRef.current.easeTo({ center: newCoords, duration: 1000 });
+            }
+        });
+
+        // Assignment confirmation
+        socket.on('EMERGENCY_ASSIGNED', (assignment) => {
+            console.log("[Socket] Emergency assigned:", assignment);
+            setBookings(prev => {
+                const exists = prev.find(b => b._id === assignment._id);
+                if (exists) return prev.map(b => b._id === assignment._id ? assignment : b);
+                return [assignment, ...prev];
+            });
+        });
+
+        return () => {
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [user]);
 
     useEffect(() => {
         // Geolocation Setup
@@ -171,8 +212,10 @@ const UserPortal = () => {
             const data = response.data;
             const orch = data.orchestration;
 
+            setHospitalAlertSent(false);
             setResult({
                 hospital: orch?.hospital?.name || (orch?.error ? "No suitable facility found" : "Nearest Emergency Center"),
+                hospitalId: orch?.hospital?.id?.toString(),
                 hospitalAddress: orch?.hospital?.location?.address || orch?.hospital?.address,
                 hospitalContact: orch?.hospital?.contact || orch?.hospital?.contactNumber,
                 assignmentReason: orch?.hospital?.reason,
@@ -199,6 +242,29 @@ const UserPortal = () => {
         }
     };
 
+    const handlePreAlert = () => {
+        if (!result?.hospitalId || !socketRef.current) return;
+        setSendingAlert(true);
+
+        socketRef.current.emit('notify_hospital', {
+            hospitalId: result.hospitalId,
+            alertData: {
+                emergency_type: result.emergency_type || 'General',
+                severity: result.priority,
+                reasoning: result.reasoning,
+                risk_flags: result.risk_flags || [],
+                ambulanceUnit: result.ambulance,
+                patientName: user?.displayName || 'Anonymous Patient'
+            }
+        });
+
+        socketRef.current.once('hospital_notified', ({ success }: { success: boolean }) => {
+            setSendingAlert(false);
+            setHospitalAlertSent(success);
+            if (!success) alert('Hospital portal is not online right now. Try again later.');
+        });
+    };
+
     const fetchBookings = async () => {
         if (!user) return;
         setIsLoadingBookings(true);
@@ -220,61 +286,8 @@ const UserPortal = () => {
     useEffect(() => {
         if (activeTab === 'bookings') {
             fetchBookings();
-
-            // Initialize Socket Connection for Tracking
-            if (user && !socketRef.current) {
-                const socket = io('http://localhost:5000');
-                socketRef.current = socket;
-
-                socket.on('connect', () => {
-                    console.log("[Socket] Connected to mission control:", socket.id);
-                    socket.emit('register_user', { userId: user.uid });
-                });
-
-                // Listen for live ambulance location
-                socket.on('DRIVER_LIVE_LOCATION', (data) => {
-                    console.log("[Socket] Live location update:", data);
-
-                    // Update Marker if it exists
-                    if (ambulanceMarkerRef.current && mapRef.current) {
-                        const newCoords: [number, number] = [data.coordinates[0], data.coordinates[1]];
-                        ambulanceMarkerRef.current.setLngLat(newCoords);
-
-                        // Smoothly center on moving ambulance
-                        mapRef.current.easeTo({
-                            center: newCoords,
-                            duration: 1000
-                        });
-                    }
-                });
-
-                // Listen for assignment confirmation
-                socket.on('EMERGENCY_ASSIGNED', (assignment) => {
-                    console.log("[Socket] Emergency assigned in real-time:", assignment);
-                    // Update bookings list instantly
-                    setBookings(prev => {
-                        const exists = prev.find(b => b._id === assignment._id);
-                        if (exists) {
-                            return prev.map(b => b._id === assignment._id ? assignment : b);
-                        }
-                        return [assignment, ...prev];
-                    });
-                });
-
-                socket.on('disconnect', () => {
-                    console.log("[Socket] Disconnected from mission control");
-                });
-            }
         }
-
-        return () => {
-            if (socketRef.current) {
-                console.log("[Socket] Releasing mission control link");
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
-        };
-    }, [activeTab, user]);
+    }, [activeTab]);
 
     // Tracking Map logic
     useEffect(() => {
@@ -551,11 +564,27 @@ const UserPortal = () => {
                                                     </div>
                                                 </div>
                                                 <p className="text-sm text-slate-500 font-medium mb-6">{result.hospitalAddress}</p>
-                                                {result.hospitalContact && (
-                                                    <a href={`tel:${result.hospitalContact}`} className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">
-                                                        📞 Call Hospital
-                                                    </a>
-                                                )}
+                                                <div className="flex flex-col gap-3">
+                                                    {result.hospitalContact && (
+                                                        <a href={`tel:${result.hospitalContact}`} className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">
+                                                            📞 Call Hospital
+                                                        </a>
+                                                    )}
+                                                    {result.hospitalId && (
+                                                        <button
+                                                            onClick={handlePreAlert}
+                                                            disabled={hospitalAlertSent || sendingAlert}
+                                                            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-2 ${hospitalAlertSent
+                                                                ? 'bg-green-50 border-green-300 text-green-700 cursor-default'
+                                                                : sendingAlert
+                                                                    ? 'bg-orange-50 border-orange-200 text-orange-600 animate-pulse cursor-wait'
+                                                                    : 'bg-yellow-50 border-yellow-300 text-yellow-800 hover:bg-yellow-100 hover:border-yellow-400 hover:shadow-lg'
+                                                                }`}
+                                                        >
+                                                            {hospitalAlertSent ? '✅ Hospital Notified' : sendingAlert ? '📡 Sending...' : '🏥 Pre-Alert Hospital'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className={`p-8 rounded-[2rem] border-2 flex flex-col justify-center ${result.ambulance.includes('not requested') ? 'border-dashed border-slate-200 bg-white' : 'border-red-100 bg-red-50/30'}`}>

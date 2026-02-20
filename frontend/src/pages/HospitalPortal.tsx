@@ -1,30 +1,23 @@
-import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Bed, Bell, Activity, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { LayoutDashboard, Users, Bed, Bell, Activity, AlertCircle, X, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { io, Socket } from 'socket.io-client';
 
 const HospitalPortal = () => {
     const { user, login, logout } = useAuthStore();
     const [hospitalData, setHospitalData] = useState<any>(null);
+    const [hospitalId, setHospitalId] = useState<string | null>(null);
     const [beds, setBeds] = useState({ icu: 4, er: 12 });
     const [staff, setStaff] = useState({
-        neuro: false,
-        cardio: false,
-        ortho: false,
-        peds: false,
-        ct: false,
-        mri: false,
-        vent: false,
-        cath: false
+        neuro: false, cardio: false, ortho: false, peds: false,
+        ct: false, mri: false, vent: false, cath: false
     });
     const [authorized, setAuthorized] = useState<boolean | null>(null);
     const [loadingData, setLoadingData] = useState(false);
-
-    const alerts = [
-        { id: 1, type: "Cardiac Arrest", severity: "Critical", eta: "8 mins", ambulance: "Unit-402" },
-        { id: 2, type: "Road Accident (Trauma)", severity: "High", eta: "15 mins", ambulance: "Unit-112" },
-        { id: 3, type: "High Fever (Pediatric)", severity: "Medium", eta: "22 mins", ambulance: "Unit-305" },
-    ];
+    const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
+    const [socketConnected, setSocketConnected] = useState(false);
+    const socketRef = useRef<Socket | null>(null);
 
     useEffect(() => {
         const verifyAndFetch = async () => {
@@ -40,6 +33,7 @@ const HospitalPortal = () => {
 
                     if (authData.authorized) {
                         setAuthorized(true);
+                        setHospitalId(authData.details.id);
                         // 2. Fetch Hospital Data
                         setLoadingData(true);
                         const dataResponse = await fetch(`http://localhost:5000/api/hospital?email=${user.email}`);
@@ -79,6 +73,32 @@ const HospitalPortal = () => {
         };
         if (user) verifyAndFetch();
     }, [user]);
+
+    // Connect socket once hospital ID is known
+    useEffect(() => {
+        if (!hospitalId || socketRef.current) return;
+
+        const socket = io('http://localhost:5000');
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+            socket.emit('register_hospital', { hospitalId });
+            setSocketConnected(true);
+            console.log('[Socket] Hospital portal connected:', socket.id);
+        });
+
+        socket.on('INCOMING_PATIENT', (alertData) => {
+            console.log('[Socket] Incoming patient alert:', alertData);
+            setLiveAlerts(prev => [{ ...alertData, id: Date.now() }, ...prev]);
+        });
+
+        socket.on('disconnect', () => setSocketConnected(false));
+
+        return () => {
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [hospitalId]);
 
     const handleUpdate = async () => {
         if (!user?.email || !hospitalData) return;
@@ -305,40 +325,68 @@ const HospitalPortal = () => {
                         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
                                 <Bell size={18} className="text-red-500" />
-                                Incoming Alerts
+                                Incoming Patient Alerts
                             </h2>
-                            <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">3 Active</span>
+                            <div className="flex items-center gap-2">
+                                {socketConnected ? (
+                                    <span className="flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
+                                        <Wifi size={12} />
+                                        LIVE
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 bg-slate-100 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">
+                                        Connecting...
+                                    </span>
+                                )}
+                                {liveAlerts.length > 0 && (
+                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">
+                                        {liveAlerts.length} Active
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="p-5 space-y-4">
-                            {alerts.map(alert => (
-                                <div key={alert.id} className="border border-slate-100 rounded-xl p-4 hover:border-blue-200 transition-colors bg-white shadow-sm flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white
-                         ${alert.severity === 'Critical' ? 'bg-red-500' : alert.severity === 'High' ? 'bg-orange-500' : 'bg-yellow-500'}`}>
-                                            {alert.type[0]}
+                        <div className="p-5 space-y-4 overflow-y-auto flex-grow">
+                            {liveAlerts.map(alert => (
+                                <div key={alert.id} className="border-2 border-red-100 bg-red-50/30 rounded-xl p-4 flex items-start justify-between gap-4 animate-in slide-in-from-top duration-300">
+                                    <div className="flex items-start gap-4">
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-white flex-shrink-0
+                                            ${alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-500' : alert.severity === 'Medium' ? 'bg-orange-500' : 'bg-yellow-500'}`}>
+                                            {(alert.emergency_type?.[0] || '?').toUpperCase()}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-800">{alert.type}</h3>
-                                            <div className="flex gap-2 mt-1">
-                                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Amb: {alert.ambulance}</span>
-                                                <span className={`text-xs px-2 py-0.5 rounded font-medium
-                             ${alert.severity === 'Critical' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'}`}>
-                                                    {alert.severity}
-                                                </span>
+                                            <h3 className="font-black text-slate-800 capitalize">{alert.emergency_type} Emergency</h3>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                <span className={`text-xs px-2 py-0.5 rounded font-bold ${alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                                                    }`}>{alert.severity} SEVERITY</span>
+                                                {alert.ambulanceUnit && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">Unit: {alert.ambulanceUnit}</span>}
+                                                {alert.patientName && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Patient: {alert.patientName}</span>}
                                             </div>
+                                            {alert.reasoning && <p className="text-xs text-slate-500 mt-2 italic max-w-sm">{alert.reasoning}</p>}
+                                            {alert.risk_flags?.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {alert.risk_flags.map((flag: string) => (
+                                                        <span key={flag} className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase">{flag.replace(/_/g, ' ')}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="text-[10px] text-slate-400 mt-2">{new Date(alert.timestamp).toLocaleTimeString()}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">{alert.eta}</div>
-                                        <div className="text-xs text-slate-400">ETA</div>
-                                    </div>
+                                    <button
+                                        onClick={() => setLiveAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                                        className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 mt-1"
+                                    >
+                                        <X size={16} />
+                                    </button>
                                 </div>
                             ))}
 
-                            {alerts.length === 0 && (
-                                <div className="text-center py-12 text-slate-400">
-                                    No active incoming alerts.
+                            {liveAlerts.length === 0 && (
+                                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                                    <Activity size={40} className="mb-4 opacity-30" />
+                                    <p className="font-bold text-sm">Monitoring for incoming patients...</p>
+                                    <p className="text-xs mt-1">Alerts will appear here in real time</p>
                                 </div>
                             )}
                         </div>

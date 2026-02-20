@@ -6,8 +6,21 @@ export const initSocketService = (io) => {
     // Key: userId (patientId), Value: socketId
     const userSockets = new Map();
 
+    // Map to track hospital socket IDs for incoming patient alerts
+    // Key: hospitalId (MongoDB _id), Value: socketId
+    const hospitalSockets = new Map();
+
     io.on('connection', (socket) => {
         console.log(`[Socket] New connection: ${socket.id}`);
+
+        // Register Hospital
+        socket.on('register_hospital', async ({ hospitalId }) => {
+            const hid = String(hospitalId);
+            hospitalSockets.set(hid, socket.id);
+            socket.hospitalId = hid;
+            console.log(`[Socket] Hospital registered: ${hid} → ${socket.id}`);
+            socket.emit('hospital_registered', { status: 'live' });
+        });
 
         // Register Driver
         socket.on('register_driver', async ({ ambulanceId }) => {
@@ -140,6 +153,25 @@ export const initSocketService = (io) => {
             }
         });
 
+        // Notify Hospital — Patient pre-alerts their assigned hospital
+        socket.on('notify_hospital', ({ hospitalId, alertData }) => {
+            const hid = String(hospitalId);
+            console.log(`[Socket] Pre-alert → hospital ${hid}. Connected hospitals:`, [...hospitalSockets.keys()]);
+            const hospitalSocketId = hospitalSockets.get(hid);
+            if (hospitalSocketId) {
+                io.to(hospitalSocketId).emit('INCOMING_PATIENT', {
+                    ...alertData,
+                    timestamp: new Date().toISOString(),
+                    status: 'incoming'
+                });
+                socket.emit('hospital_notified', { success: true });
+                console.log(`[Socket] Alert delivered to hospital ${hid}`);
+            } else {
+                socket.emit('hospital_notified', { success: false, reason: 'Hospital portal not online' });
+                console.warn(`[Socket] Hospital ${hid} not connected. Map keys:`, [...hospitalSockets.keys()]);
+            }
+        });
+
         // Disconnect Handling
         socket.on('disconnect', async () => {
             console.log(`[Socket] Disconnected: ${socket.id}`);
@@ -156,6 +188,12 @@ export const initSocketService = (io) => {
             // Cleanup user socket mapping
             if (socket.userId) {
                 userSockets.delete(socket.userId);
+            }
+
+            // Cleanup hospital socket mapping
+            if (socket.hospitalId) {
+                hospitalSockets.delete(socket.hospitalId);
+                console.log(`[Socket] Hospital offline: ${socket.hospitalId}`);
             }
         });
     });
