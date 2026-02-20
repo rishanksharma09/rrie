@@ -50,7 +50,7 @@ const getRequirements = (emergencyType) => {
 };
 
 // --- Main Orchestration Function ---
-export const orchestrateReferral = async (triageData, patientLocation, referralId, wantAmbulance) => {
+export const orchestrateReferral = async (triageData, patientLocation, referralId, wantAmbulance, patientId) => {
     const { emergency_type, severity } = triageData;
 
     // 1. Get Requirements
@@ -168,6 +168,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
     try {
         const assignment = new Assignment({
             referralId,
+            patientId,
             patientLocation,
             triage: triageData,
             assignedHospital: {

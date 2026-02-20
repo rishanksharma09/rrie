@@ -36,7 +36,8 @@ const assignmentSchema = new mongoose.Schema({
         enum: ['Pending', 'Dispatched', 'Arrived', 'Complete', 'Cancelled', 'Referral Only'],
         default: 'Pending'
     },
-    engineVersion: { type: String, default: 'v1.0.0' }
+    engineVersion: { type: String, default: 'v1.0.0' },
+    patientId: { type: String, trim: true, index: true }
 }, {
     timestamps: true
 });

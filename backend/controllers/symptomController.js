@@ -102,8 +102,9 @@ Return EXACTLY this JSON format:
                         risk_flags: jsonResponse.risk_flags || []
                     };
                     const patientLocation = { lat: latitude, lng: longitude };
+                    const patientId = req.user?.uid || 'anonymous';
 
-                    orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId, wantAmbulance);
+                    orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId, wantAmbulance, patientId);
                     console.log("Orchestration Result:", JSON.stringify(orchestrationResult, null, 2));
                 } catch (orchError) {
                     console.error("CRITICAL: Orchestration Failed:", orchError);
