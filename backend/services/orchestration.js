@@ -50,22 +50,21 @@ const getRequirements = (emergencyType) => {
 };
 
 // --- Main Orchestration Function ---
-export const orchestrateReferral = async (triageData, patientLocation, referralId) => {
-    console.log(`[Orchestration] Starting for Referral ${referralId}`);
+export const orchestrateReferral = async (triageData, patientLocation, referralId, wantAmbulance) => {
     const { emergency_type, severity } = triageData;
 
     // 1. Get Requirements
+    console.log(`[Orchestration] Referral ${referralId} - Step 1: Getting Requirements...`);
     const requirements = getRequirements(emergency_type);
-    console.log(`[Orchestration] Requirements:`, requirements);
+    console.log(`[Orchestration] Requirements for ${emergency_type}:`, JSON.stringify(requirements));
 
     // 2. Fetch Active Facilities
-    // We only want 'active' hospitals (not 'offline')
-    // 'overloaded' might be considered but with heavy penalty? 
-    // User logic says "Penalize facilities with low ICU availability", implies we fetch even if low.
-    // Let's exclude 'offline' only.
-    const hospitals = await Hospital.find({ status: { $ne: 'offline' } });
+    const hospitalsRaw = await Hospital.find({ status: { $ne: 'offline' } });
+    const hospitals = hospitalsRaw.map(h => h.toObject());
+    console.log(`[Orchestration] Found ${hospitals.length} active hospitals.`);
 
     // 3. Filter & Score Hospitals
+    console.log(`[Orchestration] Referral ${referralId} - Step 3: Scoring hospitals...`);
     const scoredHospitals = hospitals.map(hospital => {
         // --- 3a. Capability Filtering (Hard Filter) ---
         let capabilityMatch = true;
@@ -96,38 +95,13 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         }
 
         // --- 3b. Scoring Logic ---
-
-        // Distance
         const distance = calculateDistance(
             patientLocation.lat, patientLocation.lng,
             hospital.location.lat, hospital.location.lng
         );
 
-        // ICU Availability Score (Higher is better)
         const icuAvailable = hospital.beds.icuAvailable || 0;
-
-        // Status Penalty
-        const statusPenalty = hospital.status === 'overloaded' ? 50 : 0; // Huge penalty for overloaded
-
-        // Weighted Score Calculation (Lower score is "cost", so we want MINIMUM cost)
-        // Cost = (Distance * Weight) + (100 - ICU_Capacity_Scaled) + Penalty
-
-        // Weights:
-        // Distance: High importance for critical cases.
-        // ICU: Important if severity is high.
-
-        const distanceWeight = 2.0;
-        const icuWeight = 5.0; // Benefit of having ICU is subtracted from cost
-
-        // Make score "fitness" where HIGHER is BETTER? 
-        // User said "Compute a weighted referral score".
-        // Let's use a standard "Score = Quality / Cost" or similar logic.
-
-        // Approach: Higher Score is Better.
-        // Base Score = 100
-        // - Distance * 2 (lose 2 points per km)
-        // + ICU Available * 5 (gain 5 points per free bed)
-        // - Penalty (Overloaded = -50)
+        const statusPenalty = hospital.status === 'overloaded' ? 50 : 0;
 
         let score = 100 - (distance * 2) + (icuAvailable * 5) - statusPenalty;
 
@@ -136,7 +110,10 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
             name: hospital.name,
             eligible: true,
             location: hospital.location,
+            address: hospital.location?.address, // Flat fallback
             distance: parseFloat(distance.toFixed(2)),
+            contact: hospital.contactNumber || hospital.phone || hospital.contact,
+            contactNumber: hospital.contactNumber || hospital.phone || hospital.contact, // Extra redundancy
             icuAvailable,
             status: hospital.status,
             score: parseFloat(score.toFixed(2))
@@ -145,6 +122,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
 
     // Sort by Score Descending
     scoredHospitals.sort((a, b) => b.score - a.score);
+    console.log(`[Orchestration] Scored ${scoredHospitals.length} eligible hospitals.`);
 
     const bestHospital = scoredHospitals.length > 0 ? scoredHospitals[0] : null;
 
@@ -152,67 +130,94 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         console.warn("[Orchestration] No eligible hospital found!");
         return { error: "No eligible facility found within range matching capabilities." };
     }
+    console.log(`[Orchestration] Best Hospital: ${bestHospital.name} (Score: ${bestHospital.score})`);
 
-    // 4. Find Nearest Ambulance
-    // Fetch 'Available' ambulances
-    const ambulances = await Ambulance.find({ status: 'Available' });
+    // 4. Find Nearest Ambulance (Conditional)
+    console.log(`[Orchestration] Referral ${referralId} - Step 4: Finding ambulance (Requested: ${wantAmbulance})...`);
+    let bestAmbulance = null;
+    if (wantAmbulance) {
+        // Fetch 'Available' ambulances
+        const ambulances = await Ambulance.find({ status: 'Available' });
 
-    // Map distances
-    const scoredAmbulances = ambulances.map(amb => {
-        // Ambulance location is GeoJSON: [lng, lat]
-        const ambLat = amb.location.coordinates[1];
-        const ambLng = amb.location.coordinates[0];
+        // Map distances
+        const scoredAmbulances = ambulances.map(amb => {
+            const ambLat = amb.location.coordinates[1];
+            const ambLng = amb.location.coordinates[0];
 
-        const dist = calculateDistance(
-            patientLocation.lat, patientLocation.lng,
-            ambLat, ambLng
-        );
+            const dist = calculateDistance(
+                patientLocation.lat, patientLocation.lng,
+                ambLat, ambLng
+            );
 
-        return {
-            id: amb._id,
-            vehicleNumber: amb.vehicleNumber,
-            type: amb.type,
-            distance: parseFloat(dist.toFixed(2)),
-            location: { lat: ambLat, lng: ambLng }
-        };
-    });
+            return {
+                id: amb._id,
+                vehicleNumber: amb.vehicleNumber,
+                type: amb.type,
+                distance: parseFloat(dist.toFixed(2)),
+                location: { lat: ambLat, lng: ambLng }
+            };
+        });
 
-    // Sort by Distance Ascending (Nearest first)
-    scoredAmbulances.sort((a, b) => a.distance - b.distance);
-
-    const bestAmbulance = scoredAmbulances.length > 0 ? scoredAmbulances[0] : null;
+        // Sort by Distance Ascending (Nearest first)
+        scoredAmbulances.sort((a, b) => a.distance - b.distance);
+        bestAmbulance = scoredAmbulances.length > 0 ? scoredAmbulances[0] : null;
+    }
 
     // 5. Create Assignment Record
-    const assignment = new Assignment({
-        referralId,
-        patientLocation,
-        triage: triageData,
-        assignedHospital: {
-            id: bestHospital.id,
-            name: bestHospital.name,
-            location: bestHospital.location,
-            distance: bestHospital.distance,
-            score: bestHospital.score,
-            reason: `Best capability match with score ${bestHospital.score} (Dist: ${bestHospital.distance}km, ICU: ${bestHospital.icuAvailable})`
-        },
-        assignedAmbulance: bestAmbulance ? {
-            id: bestAmbulance.id,
-            vehicleNumber: bestAmbulance.vehicleNumber,
-            distance: bestAmbulance.distance,
-            eta: `${Math.ceil((bestAmbulance.distance / 40) * 60)} mins` // Crude ETA: 40km/h avg speed
-        } : null,
-        status: bestAmbulance ? 'Dispatched' : 'Pending'
-    });
+    let assignmentId = null;
+    try {
+        const assignment = new Assignment({
+            referralId,
+            patientLocation,
+            triage: triageData,
+            assignedHospital: {
+                id: bestHospital.id,
+                name: bestHospital.name,
+                contact: bestHospital.contact,
+                location: {
+                    lat: bestHospital.location.lat,
+                    lng: bestHospital.location.lng,
+                    address: bestHospital.location.address
+                },
+                distance: bestHospital.distance,
+                score: bestHospital.score,
+                reason: `Best capability match with score ${bestHospital.score} (Dist: ${bestHospital.distance}km, ICU: ${bestHospital.icuAvailable})`
+            },
+            assignedAmbulance: bestAmbulance ? {
+                id: bestAmbulance.id,
+                vehicleNumber: bestAmbulance.vehicleNumber,
+                distance: bestAmbulance.distance,
+                eta: `${Math.ceil((bestAmbulance.distance / 40) * 60)} mins`
+            } : null,
+            status: bestAmbulance ? 'Dispatched' : 'Referral Only'
+        });
 
-    await assignment.save();
-    console.log(`[Orchestration] Assignment Saved: ${assignment._id}`);
+        const savedAssignment = await assignment.save();
+        assignmentId = savedAssignment._id;
+    } catch (saveError) {
+        console.error("[Orchestration] CRITICAL: Failed to save assignment:", saveError);
+        // We continue anyway to return the recommendation to the user, but mark as failed
+        return {
+            success: false,
+            error: "Failed to save assignment record.",
+            hospital: {
+                ...bestHospital,
+                reason: `Best capability match with score ${bestHospital.score} (Dist: ${bestHospital.distance}km, ICU: ${bestHospital.icuAvailable})`
+            },
+            ambulance: bestAmbulance || (wantAmbulance ? { message: "No active ambulances available." } : { message: "Ambulance not requested." }),
+            alternatives: scoredHospitals.slice(1, 4)
+        };
+    }
 
     // 6. Return Decision
     return {
         success: true,
-        assignmentId: assignment._id,
-        hospital: bestHospital,
-        ambulance: bestAmbulance || { message: "No active ambulances available." },
-        alternatives: scoredHospitals.slice(1, 4) // Return next 3 best options
+        assignmentId: assignmentId,
+        hospital: {
+            ...bestHospital,
+            reason: `Best capability match with score ${bestHospital.score} (Dist: ${bestHospital.distance}km, ICU: ${bestHospital.icuAvailable})`
+        },
+        ambulance: bestAmbulance || (wantAmbulance ? { message: "No active ambulances available." } : { message: "Ambulance not requested." }),
+        alternatives: scoredHospitals.slice(1, 4)
     };
 };

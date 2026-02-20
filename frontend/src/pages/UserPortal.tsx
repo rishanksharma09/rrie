@@ -10,10 +10,14 @@ const UserPortal = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [locationText, setLocationText] = useState('Detecting location...');
     const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [wantAmbulance, setWantAmbulance] = useState(false);
     const recognitionRef = useRef<any>(null);
 
     interface ReferralResult {
         hospital: string;
+        hospitalAddress?: string;
+        hospitalContact?: string;
+        assignmentReason?: string;
         eta: string;
         ambulance: string;
         priority: string;
@@ -129,8 +133,6 @@ const UserPortal = () => {
         }
     };
 
-
-
     const handleAnalyze = async () => {
         if (!symptoms) return;
 
@@ -143,18 +145,22 @@ const UserPortal = () => {
                 payload.latitude = coords.latitude;
                 payload.longitude = coords.longitude;
             }
+            payload.wantAmbulance = wantAmbulance;
 
             const response = await axios.post('http://localhost:5000/api/symptoms/analyze', payload);
             const data = response.data;
             const orch = data.orchestration;
 
             setResult({
-                hospital: orch?.hospital ? orch.hospital.name : "Nearest Emergency Center",
-                eta: orch?.assignedAmbulance?.eta || "15 mins",
-                ambulance: orch?.ambulance?.vehicleNumber || "Dispatching...",
-                priority: data.severity.charAt(0).toUpperCase() + data.severity.slice(1),
-                confidence: `${(data.confidence * 100).toFixed(0)}%`,
-                reasoning: data.reasoning,
+                hospital: orch?.hospital?.name || (orch?.error ? "No suitable facility found" : "Nearest Emergency Center"),
+                hospitalAddress: orch?.hospital?.location?.address || orch?.hospital?.address,
+                hospitalContact: orch?.hospital?.contact || orch?.hospital?.contactNumber,
+                assignmentReason: orch?.hospital?.reason,
+                eta: orch?.assignedAmbulance?.eta || (orch?.ambulance?.message ? "N/A" : "15 mins"),
+                ambulance: orch?.ambulance?.vehicleNumber || orch?.ambulance?.message || "Dispatching...",
+                priority: data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'Medium',
+                confidence: `${((data.confidence || 0.8) * 100).toFixed(0)}%`,
+                reasoning: data.reasoning || "Analyzing symptoms and matching with nearest facility.",
                 emergency_type: data.emergency_type,
                 risk_flags: data.risk_flags || [],
                 alternatives: orch?.alternatives || []
@@ -236,11 +242,24 @@ const UserPortal = () => {
                             </div>
                         </div>
 
+                        <div className="flex items-center space-x-2 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                            <input
+                                type="checkbox"
+                                id="wantAmbulance"
+                                checked={wantAmbulance}
+                                onChange={(e) => setWantAmbulance(e.target.checked)}
+                                className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                            />
+                            <label htmlFor="wantAmbulance" className="text-sm font-semibold text-blue-900 cursor-pointer select-none">
+                                I need an ambulance dispatched to my location
+                            </label>
+                        </div>
+
                         <button
                             onClick={handleAnalyze}
                             disabled={isAnalyzing || !symptoms}
                             className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2
-                ${isAnalyzing || !symptoms
+                                ${isAnalyzing || !symptoms
                                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30'}`}
                         >
@@ -259,78 +278,144 @@ const UserPortal = () => {
                 {/* AI Analysis Result */}
                 {result && (
                     <div className="mt-6 animate-fade-in-up">
-                        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-                            <div className="bg-green-50 p-4 border-b border-green-100 flex items-center gap-3">
-                                <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                                    <AlertCircle size={18} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-green-800">Referral Generated</h3>
-                                    <div className="text-xs text-green-600">AI Confidence: {result.confidence}</div>
-                                </div>
-                            </div>
-
-                            <div className="p-6">
-                                <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Analysis</h4>
-
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {result.emergency_type && (
-                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded uppercase">
-                                            {result.emergency_type}
-                                        </span>
-                                    )}
-                                    {result.risk_flags?.map(flag => (
-                                        <span key={flag} className="px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded uppercase">
-                                            {flag.replace(/_/g, ' ')}
-                                        </span>
-                                    ))}
-                                </div>
-
-                                <p className="text-slate-800 bg-slate-50 p-3 rounded-lg border border-slate-100 italic">
-                                    "{result.reasoning}"
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                    <div className="text-xs text-blue-600 font-semibold mb-1">RECOMMENDED HOSPITAL</div>
-                                    <div className="text-lg font-bold text-blue-900">{result.hospital}</div>
-                                    <div className="text-sm text-blue-700 mt-1">ETA: {result.eta}</div>
-                                </div>
-
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                    <div className="text-xs text-slate-500 font-semibold mb-1">ASSIGNED AMBULANCE</div>
-                                    <div className="text-lg font-bold text-slate-900">{result.ambulance}</div>
-                                    <div className="mt-2 inline-block px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded">
-                                        {result.priority} PRIORITY
+                        <div className="bg-white rounded-3xl shadow-2xl border border-blue-100/50 overflow-hidden backdrop-blur-sm">
+                            <div className="bg-green-50/50 px-8 py-5 border-b border-green-100/50 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center shadow-sm">
+                                        <AlertCircle size={22} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-green-900 text-lg">Referral Generated</h3>
+                                        <div className="text-xs text-green-600 font-medium">System accuracy confirmed at {result.confidence}</div>
                                     </div>
                                 </div>
+                                <div className="hidden md:block">
+                                    <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full">LIVE RESPONSE</span>
+                                </div>
                             </div>
 
-                            {/* Nearby Options */}
-                            {result.alternatives && result.alternatives.length > 0 && (
-                                <div className="mt-4 border-t border-slate-100 pt-4">
-                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Nearby Facilities</h4>
-                                    <div className="space-y-2">
-                                        {result.alternatives.map((alt: any) => (
-                                            <div key={alt.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                                <div>
-                                                    <div className="font-bold text-slate-800 text-sm">{alt.name}</div>
-                                                    <div className="text-xs text-slate-500">{alt.distance} km away</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-xs font-bold text-blue-600">Score: {alt.score}</div>
-                                                    <div className={`text-[10px] font-bold uppercase ${alt.status === 'active' ? 'text-green-600' : 'text-orange-600'
-                                                        }`}>
-                                                        {alt.status}
-                                                    </div>
-                                                </div>
-                                            </div>
+                            <div className="p-8 md:p-10 space-y-8">
+                                <section>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Clinical Analysis</h4>
+                                        <div className="h-[1px] flex-1 bg-slate-100"></div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2.5 mb-5">
+                                        {result.emergency_type && (
+                                            <span className="px-3 py-1.5 bg-purple-600 text-white text-[10px] font-black rounded-lg uppercase shadow-sm shadow-purple-200">
+                                                {result.emergency_type}
+                                            </span>
+                                        )}
+                                        {result.risk_flags?.map(flag => (
+                                            <span key={flag} className="px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded uppercase">
+                                                {flag.replace(/_/g, ' ')}
+                                            </span>
                                         ))}
                                     </div>
-                                </div>
-                            )}
 
+                                    <p className="text-slate-700 bg-slate-50/80 p-5 rounded-2xl border border-slate-100 italic leading-relaxed text-sm md:text-base">
+                                        "{result.reasoning}"
+                                    </p>
+                                </section>
+
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                                    <div className="md:col-span-3 bg-blue-50/50 p-8 rounded-3xl border border-blue-100 shadow-sm transition-all hover:shadow-md">
+                                        <div className="text-[10px] text-blue-600 font-black tracking-[0.2em] mb-4 uppercase opacity-60">RECOMMENDED FACILITY</div>
+                                        <div className={`text-2xl font-black ${result.hospital === "No suitable facility found" ? 'text-red-600' : 'text-blue-900'} mb-4 leading-tight`}>
+                                            {result.hospital}
+                                        </div>
+
+                                        <div className="space-y-3 mb-6">
+                                            {result.hospitalAddress && (
+                                                <div className="flex items-start text-sm text-blue-800/80">
+                                                    <MapPin size={16} className="mr-3 mt-0.5 flex-shrink-0 text-blue-400" />
+                                                    <span className="font-medium leading-relaxed">{result.hospitalAddress}</span>
+                                                </div>
+                                            )}
+
+                                            {result.hospitalContact && (
+                                                <div className="flex items-center text-sm text-blue-800">
+                                                    <span className="w-4 mr-3 flex justify-center text-blue-400">📞</span>
+                                                    <a href={`tel:${result.hospitalContact}`} className="font-bold hover:underline bg-blue-100/50 px-3 py-1 rounded-xl text-blue-700 transition-colors hover:bg-blue-100">
+                                                        {result.hospitalContact}
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-3 mb-6">
+                                            <div className="text-xs font-black text-blue-700 bg-white px-4 py-2 rounded-xl border border-blue-100 shadow-sm inline-flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                                {result.hospital === "No suitable facility found" ? "⚠️ SEEKING ALTERNATIVE" : `ETA: ${result.eta}`}
+                                            </div>
+                                        </div>
+
+                                        {result.assignmentReason && (
+                                            <div className="mt-4 text-[11px] text-blue-700/60 font-medium leading-relaxed pt-5 border-t border-blue-200/40">
+                                                <span className="text-blue-800/80 font-bold uppercase tracking-wider mr-2">LOGIC:</span> {result.assignmentReason}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className={`md:col-span-2 flex flex-col justify-center gap-4 ${result.ambulance === 'Ambulance not requested.' ? 'bg-slate-50/50 border-dashed' : 'bg-slate-50'} p-8 rounded-3xl border border-slate-100`}>
+                                        <div className="text-[10px] text-slate-400 font-black tracking-[0.2em] mb-1 uppercase">TRANSPORT STATUS</div>
+                                        <div className={`text-xl font-bold ${result.ambulance === 'Ambulance not requested.' ? 'text-slate-300' : 'text-slate-900'} leading-tight`}>
+                                            {result.ambulance === 'Ambulance not requested.' ? 'Self-Transport Recommended' : result.ambulance}
+                                        </div>
+
+                                        {result.ambulance !== 'Ambulance not requested.' ? (
+                                            <div className="mt-2 text-[10px] font-black bg-red-600 text-white px-3 py-1 rounded-full inline-block w-fit shadow-lg shadow-red-200">
+                                                {result.priority} PRIORITY DISPATCH
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                                                Follow recommended route to nearest facility unless condition worsens.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Nearby Options */}
+                                {result.alternatives && result.alternatives.length > 0 && (
+                                    <section className="pt-8 border-t border-slate-100">
+                                        <div className="flex items-center gap-2 mb-6">
+                                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Secondary Facilities</h4>
+                                            <div className="h-[1px] flex-1 bg-slate-100"></div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {result.alternatives.map((alt: any, idx: number) => (
+                                                <div key={idx} className="group relative bg-white p-5 hover:bg-slate-50 rounded-2xl transition-all border border-slate-100 hover:border-blue-100 hover:shadow-sm">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                        <div className="flex-1">
+                                                            <div className="font-bold text-slate-900 text-lg mb-1">{alt.name}</div>
+                                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500 font-medium">
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <MapPin size={12} className="text-slate-300" />
+                                                                    {alt.distance} km • {alt.location?.address || alt.address}
+                                                                </span>
+                                                                {(alt.contact || alt.contactNumber) && (
+                                                                    <a href={`tel:${alt.contact || alt.contactNumber}`} className="flex items-center gap-1.5 text-blue-600 hover:underline">
+                                                                        <span className="text-slate-300 pointer-events-none">📞</span>
+                                                                        {alt.contact || alt.contactNumber}
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center md:flex-col md:items-end gap-3 md:gap-1">
+                                                            <div className="text-[10px] font-black text-blue-600 tracking-tighter bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">MATCH: {alt.score}</div>
+                                                            <div className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-lg ${alt.status === 'active' ? 'bg-green-50 text-green-500' : 'bg-orange-50 text-orange-500'}`}>
+                                                                {alt.status}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

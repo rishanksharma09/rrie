@@ -1,0 +1,172 @@
+[
+  {
+    "location": {
+      "lat": 29.6857,
+      "lng": 76.9905,
+      "address": "123 Test St, Test City"
+    },
+    "beds": {
+      "icuAvailable": 17,
+      "icuTotal": 10,
+      "erAvailable": 29,
+      "wardAvailable": 12
+    },
+    "specialists": {
+      "neurologist": true,
+      "cardiologist": true,
+      "orthopedic": true,
+      "pediatrician": true
+    },
+    "equipment": {
+      "ctScan": true,
+      "mri": true,
+      "ventilator": true,
+      "cathLab": true
+    },
+    "_id": "69945f5328834d91003702f4",
+    "name": "City General Hospital (Test)",
+    "email": "rishanksharma04524@gmail.com",
+    "level": "district",
+    "contactNumber": "9876543210",
+    "status": "active",
+    "createdAt": "2026-02-17T12:30:11.267Z",
+    "updatedAt": "2026-02-20T10:56:08.381Z",
+    "__v": 0
+  },
+  {
+    "location": {
+      "lat": 29.7,
+      "lng": 77.01,
+      "address": "45 North Ave, Test City"
+    },
+    "beds": {
+      "icuAvailable": 8,
+      "icuTotal": 25,
+      "erAvailable": 10,
+      "wardAvailable": 40
+    },
+    "specialists": {
+      "neurologist": true,
+      "cardiologist": true,
+      "orthopedic": true,
+      "pediatrician": false
+    },
+    "equipment": {
+      "ctScan": true,
+      "mri": true,
+      "ventilator": true,
+      "cathLab": true
+    },
+    "_id": "699460e4f9c1fe02324ae8dc",
+    "name": "Northside Trauma Center",
+    "email": "northside@test.com",
+    "level": "state",
+    "contactNumber": "1112223333",
+    "status": "active",
+    "__v": 0,
+    "createdAt": "2026-02-17T12:36:52.297Z",
+    "updatedAt": "2026-02-20T10:56:08.381Z"
+  },
+  {
+    "location": {
+      "lat": 29.66,
+      "lng": 76.95,
+      "address": "88 West Blvd, Test City"
+    },
+    "beds": {
+      "icuAvailable": 0,
+      "icuTotal": 5,
+      "erAvailable": 2,
+      "wardAvailable": 15
+    },
+    "specialists": {
+      "neurologist": false,
+      "cardiologist": false,
+      "orthopedic": true,
+      "pediatrician": true
+    },
+    "equipment": {
+      "ctScan": false,
+      "mri": false,
+      "ventilator": true,
+      "cathLab": false
+    },
+    "_id": "699460e4f9c1fe02324ae8dd",
+    "name": "West End Community Clinic",
+    "email": "westend@test.com",
+    "level": "community",
+    "contactNumber": "4445556666",
+    "status": "overloaded",
+    "__v": 0,
+    "createdAt": "2026-02-17T12:36:52.299Z",
+    "updatedAt": "2026-02-17T12:36:52.299Z"
+  },
+  {
+    "location": {
+      "lat": 29.69,
+      "lng": 77.05,
+      "address": "101 East St, Test City"
+    },
+    "beds": {
+      "icuAvailable": 12,
+      "icuTotal": 30,
+      "erAvailable": 8,
+      "wardAvailable": 60
+    },
+    "specialists": {
+      "neurologist": true,
+      "cardiologist": true,
+      "orthopedic": true,
+      "pediatrician": true
+    },
+    "equipment": {
+      "ctScan": true,
+      "mri": true,
+      "ventilator": true,
+      "cathLab": true
+    },
+    "_id": "699460e4f9c1fe02324ae8de",
+    "name": "East Valley Children's Hospital",
+    "email": "eastvalley@test.com",
+    "level": "specialty",
+    "contactNumber": "7778889999",
+    "status": "active",
+    "__v": 0,
+    "createdAt": "2026-02-17T12:36:52.299Z",
+    "updatedAt": "2026-02-20T10:56:08.381Z"
+  },
+  {
+    "location": {
+      "lat": 29.64,
+      "lng": 76.98,
+      "address": "22 South Rd, Test City"
+    },
+    "beds": {
+      "icuAvailable": 1,
+      "icuTotal": 15,
+      "erAvailable": 3,
+      "wardAvailable": 20
+    },
+    "specialists": {
+      "neurologist": false,
+      "cardiologist": true,
+      "orthopedic": true,
+      "pediatrician": false
+    },
+    "equipment": {
+      "ctScan": true,
+      "mri": false,
+      "ventilator": true,
+      "cathLab": true
+    },
+    "_id": "699460e4f9c1fe02324ae8df",
+    "name": "South City Emergency",
+    "email": "southcity@test.com",
+    "level": "district",
+    "contactNumber": "0001112222",
+    "status": "active",
+    "__v": 0,
+    "createdAt": "2026-02-17T12:36:52.299Z",
+    "updatedAt": "2026-02-20T10:56:08.381Z"
+  }
+]

@@ -19,7 +19,8 @@ const assignmentSchema = new mongoose.Schema({
     assignedHospital: {
         id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital' },
         name: String,
-        location: { lat: Number, lng: Number },
+        contact: String,
+        location: { lat: Number, lng: Number, address: String },
         distance: Number,
         score: Number,
         reason: String
@@ -32,7 +33,7 @@ const assignmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Dispatched', 'Arrived', 'Complete', 'Cancelled'],
+        enum: ['Pending', 'Dispatched', 'Arrived', 'Complete', 'Cancelled', 'Referral Only'],
         default: 'Pending'
     },
     engineVersion: { type: String, default: 'v1.0.0' }

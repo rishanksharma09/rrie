@@ -72,7 +72,7 @@ Return EXACTLY this JSON format:
         `;
 
         const response = await client.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-flash-lite',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -85,12 +85,12 @@ Return EXACTLY this JSON format:
             const jsonResponse = JSON.parse(jsonText);
 
             // --- Orchestration Integration ---
-            const { latitude, longitude } = req.body;
+            const { latitude, longitude, wantAmbulance } = req.body;
             let orchestrationResult = null;
 
             if (latitude && longitude) {
                 try {
-                    console.log("Orchestrating referral for location:", latitude, longitude);
+                    console.log(`[API] Orchestrating: Lat=${latitude}, Lng=${longitude}, WantAmbulance=${wantAmbulance}`);
                     const mongoose = await import('mongoose');
                     const { orchestrateReferral } = await import('../services/orchestration.js');
 
@@ -103,9 +103,17 @@ Return EXACTLY this JSON format:
                     };
                     const patientLocation = { lat: latitude, lng: longitude };
 
-                    orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId);
+                    orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId, wantAmbulance);
+                    console.log("Orchestration Result:", JSON.stringify(orchestrationResult, null, 2));
                 } catch (orchError) {
-                    console.error("Orchestration Failed:", orchError);
+                    console.error("CRITICAL: Orchestration Failed:", orchError);
+                    // Return a partial object so the UI doesn't completely break
+                    orchestrationResult = {
+                        error: orchError.message,
+                        hospital: null,
+                        ambulance: { message: "Orchestration Error" },
+                        alternatives: []
+                    };
                 }
             }
 
@@ -114,7 +122,14 @@ Return EXACTLY this JSON format:
                 orchestration: orchestrationResult
             };
 
-            console.log(finalResponse);
+            console.log("--- ORCHESTRATION RESULT Keys:", Object.keys(orchestrationResult));
+            if (orchestrationResult.hospital) {
+                console.log("--- RECOMMENDED HOSPITAL:", {
+                    name: orchestrationResult.hospital.name,
+                    contact: orchestrationResult.hospital.contact,
+                    reason: orchestrationResult.hospital.reason
+                });
+            }
             res.json(finalResponse);
         } else {
             throw new Error("No candidates or text found in response.");
