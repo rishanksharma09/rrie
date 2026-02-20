@@ -2,6 +2,8 @@ import Hospital from '../models/Hospital.js';
 import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
 
+import { io } from '../server.js';
+
 // --- Helper: Haversine Distance (in km) ---
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the earth in km
@@ -184,17 +186,48 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                 score: bestHospital.score,
                 reason: `Best capability match with score ${bestHospital.score} (Dist: ${bestHospital.distance}km, ICU: ${bestHospital.icuAvailable})`
             },
-            assignedAmbulance: bestAmbulance ? {
-                id: bestAmbulance.id,
-                vehicleNumber: bestAmbulance.vehicleNumber,
-                distance: bestAmbulance.distance,
-                eta: `${Math.ceil((bestAmbulance.distance / 40) * 60)} mins`
-            } : null,
-            status: bestAmbulance ? 'Dispatched' : 'Referral Only'
+            assignedAmbulance: null, // Driver will accept via Socket
+            status: wantAmbulance ? 'Pending' : 'Referral Only'
         });
 
         const savedAssignment = await assignment.save();
         assignmentId = savedAssignment._id;
+
+        // --- Notify Nearby Drivers ---
+        if (savedAssignment.status === 'Pending' && io) {
+            try {
+                console.log(`[Orchestration] Searching for drivers near: [${patientLocation.lng}, ${patientLocation.lat}]`);
+                const nearbyDrivers = await Ambulance.find({
+                    status: 'Available',
+                    isOnline: true,
+                    location: {
+                        $near: {
+                            $geometry: {
+                                type: 'Point',
+                                coordinates: [patientLocation.lng, patientLocation.lat]
+                            },
+                            $maxDistance: 1000000 // Increase to 1000km for testing
+                        }
+                    }
+                });
+
+                console.log(`[Orchestration] Found ${nearbyDrivers.length} online drivers within range.`);
+
+                nearbyDrivers.forEach(driver => {
+                    console.log(`[Orchestration] Alerting driver: ${driver.vehicleNumber} (Socket: ${driver.socketId})`);
+                    if (driver.socketId) {
+                        io.to(driver.socketId).emit('NEW_EMERGENCY', {
+                            assignmentId: savedAssignment._id,
+                            triage: savedAssignment.triage,
+                            patientLocation: savedAssignment.patientLocation,
+                            hospitalName: bestHospital.name
+                        });
+                    }
+                });
+            } catch (socketError) {
+                console.error("[Orchestration] Socket notification error:", socketError);
+            }
+        }
     } catch (saveError) {
         console.error("[Orchestration] CRITICAL: Failed to save assignment:", saveError);
         // We continue anyway to return the recommendation to the user, but mark as failed

@@ -29,7 +29,8 @@ const assignmentSchema = new mongoose.Schema({
         id: { type: mongoose.Schema.Types.ObjectId, ref: 'Ambulance' },
         vehicleNumber: String,
         eta: String,
-        distance: Number
+        distance: Number,
+        status: { type: String, default: 'Pending' }
     },
     status: {
         type: String,

@@ -57,6 +57,14 @@ const ambulanceSchema = new mongoose.Schema({
     equipment: [{
         type: String
     }],
+    socketId: {
+        type: String,
+        default: null
+    },
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
     isActive: {
         type: Boolean,
         default: true

@@ -4,6 +4,7 @@ import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboa
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import mapboxgl from 'mapbox-gl';
+import { io, Socket } from 'socket.io-client';
 
 const UserPortal = () => {
     const [symptoms, setSymptoms] = useState('');
@@ -21,6 +22,7 @@ const UserPortal = () => {
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const patientMarkerRef = useRef<mapboxgl.Marker | null>(null);
     const ambulanceMarkerRef = useRef<mapboxgl.Marker | null>(null);
+    const socketRef = useRef<Socket | null>(null);
 
     // Set Mapbox access token
     if (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) {
@@ -218,7 +220,60 @@ const UserPortal = () => {
     useEffect(() => {
         if (activeTab === 'bookings') {
             fetchBookings();
+
+            // Initialize Socket Connection for Tracking
+            if (user && !socketRef.current) {
+                const socket = io('http://localhost:5000');
+                socketRef.current = socket;
+
+                socket.on('connect', () => {
+                    console.log("[Socket] Connected to mission control:", socket.id);
+                    socket.emit('register_user', { userId: user.uid });
+                });
+
+                // Listen for live ambulance location
+                socket.on('DRIVER_LIVE_LOCATION', (data) => {
+                    console.log("[Socket] Live location update:", data);
+
+                    // Update Marker if it exists
+                    if (ambulanceMarkerRef.current && mapRef.current) {
+                        const newCoords: [number, number] = [data.coordinates[0], data.coordinates[1]];
+                        ambulanceMarkerRef.current.setLngLat(newCoords);
+
+                        // Smoothly center on moving ambulance
+                        mapRef.current.easeTo({
+                            center: newCoords,
+                            duration: 1000
+                        });
+                    }
+                });
+
+                // Listen for assignment confirmation
+                socket.on('EMERGENCY_ASSIGNED', (assignment) => {
+                    console.log("[Socket] Emergency assigned in real-time:", assignment);
+                    // Update bookings list instantly
+                    setBookings(prev => {
+                        const exists = prev.find(b => b._id === assignment._id);
+                        if (exists) {
+                            return prev.map(b => b._id === assignment._id ? assignment : b);
+                        }
+                        return [assignment, ...prev];
+                    });
+                });
+
+                socket.on('disconnect', () => {
+                    console.log("[Socket] Disconnected from mission control");
+                });
+            }
         }
+
+        return () => {
+            if (socketRef.current) {
+                console.log("[Socket] Releasing mission control link");
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+        };
     }, [activeTab, user]);
 
     // Tracking Map logic
