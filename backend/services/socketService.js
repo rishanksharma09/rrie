@@ -1,5 +1,6 @@
 import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
+import { calculateETA } from '../utils/mapboxUtils.js';
 
 // Module-level map — exported so orchestration.js can use live socket IDs
 // Key: ambulanceId (MongoDB _id string), Value: socketId
@@ -87,10 +88,22 @@ export const initSocketService = async (io) => {
                 if (activeAssignment && activeAssignment.patientId) {
                     const userSocketId = userSockets.get(activeAssignment.patientId);
                     if (userSocketId) {
+                        // Calculate ETA in real-time using Mapbox
+                        const patientCoords = [activeAssignment.patientLocation.lng, activeAssignment.patientLocation.lat];
+                        const { etaText } = await calculateETA(coordinates, patientCoords);
+
+                        // Update Assignment in DB (optional but good for persistence)
+                        if (activeAssignment.assignedAmbulance) {
+                            activeAssignment.assignedAmbulance.eta = etaText;
+                            await activeAssignment.save();
+                        }
+
                         io.to(userSocketId).emit('DRIVER_LIVE_LOCATION', {
+                            assignmentId: activeAssignment._id,
                             ambulanceId,
                             coordinates,
-                            vehicleNumber: activeAssignment.assignedAmbulance.vehicleNumber
+                            vehicleNumber: activeAssignment.assignedAmbulance.vehicleNumber,
+                            eta: etaText
                         });
                     }
                 }
@@ -129,6 +142,16 @@ export const initSocketService = async (io) => {
                 if (!assignment) {
                     console.warn(`[Socket] Accept failed: Assignment ${assignmentId} already taken or invalid.`);
                     return socket.emit('error', { message: 'Assignment already taken or invalid' });
+                }
+
+                // Calculate initial ETA
+                if (ambulanceObj.location && ambulanceObj.location.coordinates) {
+                    const ambCoords = ambulanceObj.location.coordinates;
+                    const patientCoords = [assignment.patientLocation.lng, assignment.patientLocation.lat];
+                    const { etaText } = await calculateETA(ambCoords, patientCoords);
+
+                    assignment.assignedAmbulance.eta = etaText;
+                    await assignment.save();
                 }
 
                 // 3. Update ambulance status in DB

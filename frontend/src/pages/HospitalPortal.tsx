@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { io, Socket } from 'socket.io-client';
 
 const HospitalPortal = () => {
-    const { user, login, logout } = useAuthStore();
+    const { user, logout } = useAuthStore();
     const [hospitalData, setHospitalData] = useState<any>(null);
     const [hospitalId, setHospitalId] = useState<string | null>(null);
     const [beds, setBeds] = useState({ icu: 4, er: 12 });
@@ -14,7 +14,6 @@ const HospitalPortal = () => {
         ct: false, mri: false, vent: false, cath: false
     });
     const [authorized, setAuthorized] = useState<boolean | null>(null);
-    const [loadingData, setLoadingData] = useState(false);
     const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
     const [socketConnected, setSocketConnected] = useState(false);
     const socketRef = useRef<Socket | null>(null);
@@ -35,7 +34,6 @@ const HospitalPortal = () => {
                         setAuthorized(true);
                         setHospitalId(authData.details.id);
                         // 2. Fetch Hospital Data
-                        setLoadingData(true);
                         const dataResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospital?email=${user.email}`);
                         if (dataResponse.ok) {
                             const data = await dataResponse.json();
@@ -60,14 +58,12 @@ const HospitalPortal = () => {
                                 });
                             }
                         }
-                        setLoadingData(false);
                     } else {
                         setAuthorized(false);
                     }
                 } catch (error) {
                     console.error("Verification/Fetch error", error);
                     setAuthorized(false);
-                    setLoadingData(false);
                 }
             }
         };

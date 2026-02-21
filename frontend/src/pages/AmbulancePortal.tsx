@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Navigation, MapPin, Truck, AlertCircle, Shield, X, Check } from 'lucide-react';
+import { Navigation, MapPin, Truck, AlertCircle, Shield, Check } from 'lucide-react';
 import Map, { Marker } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Link } from 'react-router-dom';
@@ -9,7 +9,6 @@ import { io, Socket } from 'socket.io-client';
 const AmbulancePortal = () => {
     const { user, logout } = useAuthStore();
     const [isBusy, setIsBusy] = useState(false);
-    const [navigating, setNavigating] = useState(false);
     const [authorized, setAuthorized] = useState<boolean | null>(null);
     const [ambulanceId, setAmbulanceId] = useState<string | null>(null);
     const [incomingEmergency, setIncomingEmergency] = useState<any>(null);
@@ -125,7 +124,6 @@ const AmbulancePortal = () => {
         }
         setIsBusy(false);
         setActiveMission(null);
-        setNavigating(false);
         setIncomingEmergency(null);
     };
 

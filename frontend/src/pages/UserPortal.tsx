@@ -115,6 +115,26 @@ const UserPortal = () => {
                 ambulanceMarkerRef.current.setLngLat(newCoords);
                 mapRef.current.easeTo({ center: newCoords, duration: 1000 });
             }
+
+            // Update result and bookings with real-time ETA
+            if (data.eta) {
+                setResult(prev => {
+                    if (prev && prev.assignmentId === data.assignmentId) {
+                        return { ...prev, eta: data.eta };
+                    }
+                    // If the active result matches the ambulance, update it even if assignmentId is missing in data
+                    if (prev && prev.ambulance === data.vehicleNumber) {
+                        return { ...prev, eta: data.eta };
+                    }
+                    return prev;
+                });
+
+                setBookings(prev => prev.map(b =>
+                    b.assignedAmbulance?.id === data.ambulanceId || b.assignedAmbulance?.vehicleNumber === data.vehicleNumber
+                        ? { ...b, assignedAmbulance: { ...b.assignedAmbulance, eta: data.eta } }
+                        : b
+                ));
+            }
         });
 
         // Assignment confirmation
@@ -131,6 +151,16 @@ const UserPortal = () => {
                 if (prev && prev.assignmentId === assignment._id) {
                     return {
                         ...prev,
+                        status: assignment.status,
+                        ambulance: assignment.assignedAmbulance?.vehicleNumber || prev.ambulance,
+                        eta: assignment.assignedAmbulance?.eta || prev.eta
+                    };
+                }
+                // If current result doesn't have an ID yet but was just assigned
+                if (prev && !prev.assignmentId && assignment.status === 'Dispatched') {
+                    return {
+                        ...prev,
+                        assignmentId: assignment._id,
                         status: assignment.status,
                         ambulance: assignment.assignedAmbulance?.vehicleNumber || prev.ambulance,
                         eta: assignment.assignedAmbulance?.eta || prev.eta
@@ -438,10 +468,10 @@ const UserPortal = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 flex">
-            {/* Sidebar */}
-            <aside className="w-20 md:w-64 bg-white border-r border-slate-200 flex flex-col items-center md:items-stretch py-8 px-4 fixed h-full z-20">
-                <div className="hidden md:flex items-center gap-3 px-4 mb-10">
+        <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row">
+            {/* Sidebar - Desktop Only */}
+            <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col py-8 px-4 fixed h-full z-20">
+                <div className="flex items-center gap-3 px-4 mb-10">
                     <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
                         <Activity size={24} />
                     </div>
@@ -451,29 +481,28 @@ const UserPortal = () => {
                 <div className="space-y-2 flex-1">
                     <button
                         onClick={() => setActiveTab('analyze')}
-                        className={`w-full p-4 md:p-3 rounded-2xl flex items-center gap-3 transition-all ${activeTab === 'analyze'
+                        className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${activeTab === 'analyze'
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                             : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                             }`}
                     >
                         <LayoutDashboard size={22} />
-                        <span className="hidden md:block font-bold">{t.analyzeSymptoms}</span>
+                        <span className="font-bold">{t.analyzeSymptoms}</span>
                     </button>
 
                     <button
                         onClick={() => setActiveTab('bookings')}
-                        className={`w-full p-4 md:p-3 rounded-2xl flex items-center gap-3 transition-all ${activeTab === 'bookings'
+                        className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${activeTab === 'bookings'
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                             : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                             }`}
                     >
                         <MapIcon size={22} />
-                        <span className="hidden md:block font-bold">{t.ambulanceTracking}</span>
+                        <span className="font-bold">{t.ambulanceTracking}</span>
                     </button>
                 </div>
 
-                {/* Language Toggle in Sidebar */}
-                <div className="hidden md:flex gap-2 py-4 px-1">
+                <div className="flex gap-2 py-4 px-1">
                     <button
                         onClick={() => setLanguage('en')}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${language === 'en' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-300'}`}
@@ -491,16 +520,40 @@ const UserPortal = () => {
                 <div className="pt-4 border-t border-slate-100">
                     <button
                         onClick={logout}
-                        className="w-full p-4 md:p-3 rounded-2xl flex items-center gap-3 text-red-500 hover:bg-red-50 transition-all font-bold"
+                        className="w-full p-3 rounded-2xl flex items-center gap-3 text-red-500 hover:bg-red-50 transition-all font-bold"
                     >
                         <LogOut size={22} />
-                        <span className="hidden md:block">{t.logout}</span>
+                        <span>{t.logout}</span>
                     </button>
                 </div>
             </aside>
 
+            {/* Mobile Header */}
+            <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                        <Activity size={18} />
+                    </div>
+                    <span className="font-black text-xl text-slate-900 tracking-tight">RRIE</span>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setLanguage('en')}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${language === 'en' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                    >
+                        EN
+                    </button>
+                    <button
+                        onClick={() => setLanguage('hi')}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${language === 'hi' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                    >
+                        हिं
+                    </button>
+                </div>
+            </header>
+
             {/* Main Content */}
-            <main className="flex-1 ml-20 md:ml-64 p-4 md:p-10">
+            <main className="flex-1 md:ml-64 p-4 md:p-10 mb-24 md:mb-0 overflow-x-hidden">
                 {activeTab === 'analyze' ? (
                     <div className="max-w-3xl mx-auto space-y-8">
                         <div className="flex items-center justify-between">
@@ -510,50 +563,50 @@ const UserPortal = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                            <div className="p-8 md:p-10 space-y-8">
+                        <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                            <div className="p-6 md:p-10 space-y-6 md:y-8">
                                 <div>
-                                    <label className="block text-sm font-black text-slate-400 uppercase tracking-widest mb-4">{t.symptomsLabel}</label>
+                                    <label className="block text-[10px] md:text-sm font-black text-slate-400 uppercase tracking-widest mb-4">{t.symptomsLabel}</label>
                                     <div className="relative group">
                                         <textarea
-                                            className="w-full h-48 p-6 rounded-3xl border-2 border-slate-50 bg-slate-50 focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-slate-700 text-lg leading-relaxed shadow-inner"
+                                            className="w-full h-40 md:h-48 p-5 md:p-6 rounded-2xl md:rounded-3xl border-2 border-slate-50 bg-slate-50 focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-slate-700 text-base md:text-lg leading-relaxed shadow-inner"
                                             placeholder={t.symptomsPlaceholder}
                                             value={symptoms}
                                             onChange={(e) => setSymptoms(e.target.value)}
                                         />
                                         <button
                                             onClick={toggleRecording}
-                                            className={`absolute bottom-6 right-6 p-4 rounded-2xl shadow-xl transition-all ${isRecording
+                                            className={`absolute bottom-4 right-4 md:bottom-6 md:right-6 p-3 md:p-4 rounded-xl md:rounded-2xl shadow-xl transition-all ${isRecording
                                                 ? 'bg-red-500 text-white animate-pulse shadow-red-500/30'
                                                 : 'bg-white text-slate-400 hover:text-blue-600 hover:shadow-blue-500/10'
                                                 }`}
                                         >
-                                            {isRecording ? <StopCircle size={24} /> : <Mic size={24} />}
+                                            {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <label className="block text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <MapPin size={14} /> {t.yourLocation}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                    <div className="space-y-3 md:space-y-4">
+                                        <label className="block text-[10px] md:text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <MapPin size={12} /> {t.yourLocation}
                                         </label>
-                                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-slate-600 font-bold text-sm shadow-inner">
+                                        <div className="p-4 md:p-5 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 text-slate-600 font-bold text-xs md:text-sm shadow-inner truncate">
                                             {locationText || t.detectingLocation}
                                         </div>
                                     </div>
-                                    <div className="space-y-4">
-                                        <label className="block text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="space-y-3 md:space-y-4">
+                                        <label className="block text-[10px] md:text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                             {t.ambulancePriority}
                                         </label>
-                                        <div className="flex items-center gap-3 bg-red-50 p-5 rounded-2xl border border-red-100 transition-all hover:bg-red-100/50 cursor-pointer" onClick={() => setWantAmbulance(!wantAmbulance)}>
+                                        <div className="flex items-center gap-3 bg-red-50 p-4 md:p-5 rounded-xl md:rounded-2xl border border-red-100 transition-all hover:bg-red-100/50 cursor-pointer" onClick={() => setWantAmbulance(!wantAmbulance)}>
                                             <input
                                                 type="checkbox"
                                                 checked={wantAmbulance}
                                                 onChange={(e) => setWantAmbulance(e.target.checked)}
-                                                className="w-6 h-6 text-red-600 border-red-200 rounded-lg focus:ring-red-500"
+                                                className="w-5 h-5 text-red-600 border-red-200 rounded focus:ring-red-500"
                                             />
-                                            <span className="text-sm font-black text-red-900 leading-tight">{t.needAmbulance}</span>
+                                            <span className="text-xs md:text-sm font-black text-red-900 leading-tight">{t.needAmbulance}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -561,19 +614,19 @@ const UserPortal = () => {
                                 <button
                                     onClick={handleAnalyze}
                                     disabled={isAnalyzing || !symptoms}
-                                    className={`w-full py-6 rounded-[2rem] font-black text-xl transition-all flex items-center justify-center gap-4 shadow-2xl
+                                    className={`w-full py-5 md:py-6 rounded-2xl md:rounded-[2rem] font-black text-lg md:text-xl transition-all flex items-center justify-center gap-3 md:gap-4 shadow-2xl
                                         ${isAnalyzing || !symptoms
                                             ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
                                             : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/30 hover:scale-[1.02] active:scale-[0.98]'}`}
                                 >
                                     {isAnalyzing ? (
                                         <>
-                                            <Loader2 className="animate-spin" size={24} />
+                                            <Loader2 className="animate-spin" size={22} />
                                             {t.analyzingEmergency}
                                         </>
                                     ) : (
                                         <>
-                                            <Activity size={24} />
+                                            <Activity size={22} />
                                             {t.analyzeSymptomBtn}
                                         </>
                                     )}
@@ -605,10 +658,10 @@ const UserPortal = () => {
                                             </p>
                                         </section>
 
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                            <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                                            <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
                                                 <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-4">{t.assignedHospital}</div>
-                                                <div className="flex items-center justify-between mb-2">
+                                                <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2">
                                                     <h4 className="text-2xl font-black text-slate-900">{result.hospital}</h4>
                                                     <div className="text-[10px] font-black text-blue-600 tracking-tighter bg-white px-2 py-1 rounded-lg border border-blue-100 shadow-sm">
                                                         {t.matchScore}: {result.hospitalScore}
@@ -700,8 +753,8 @@ const UserPortal = () => {
                             <p className="text-slate-500 font-medium">{t.liveTrackingSubtitle}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[600px]">
-                            <div className="lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-auto lg:h-[600px]">
+                            <div className="order-2 lg:order-1 lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[500px] lg:max-h-full">
                                 {isLoadingBookings ? (
                                     <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={40} /></div>
                                 ) : bookings.length === 0 ? (
@@ -732,23 +785,23 @@ const UserPortal = () => {
                                 )}
                             </div>
 
-                            <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl relative overflow-hidden">
+                            <div className="order-1 lg:order-2 lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl relative overflow-hidden h-[400px] lg:h-full">
                                 {bookings.length > 0 ? (
                                     <div className="w-full h-full relative">
                                         <div ref={mapContainerRef} className="absolute inset-0 z-0 bg-slate-50" style={{ width: '100%', height: '100%' }} />
                                         {/* HUD Overlay */}
                                         {bookings[0]?.assignedAmbulance?.id?.contactNumber && (
-                                            <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-2xl border border-white/50 flex items-center justify-between z-10">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600">
-                                                        <Truck size={24} />
+                                            <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 bg-white/90 backdrop-blur-md p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-white/50 flex flex-col sm:flex-row items-center justify-between gap-4 z-10 font-bold overflow-hidden">
+                                                <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
+                                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-xl md:rounded-2xl flex items-center justify-center text-red-600 shrink-0">
+                                                        <Truck size={20} />
                                                     </div>
-                                                    <div>
-                                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.ambulanceDriver2}</div>
-                                                        <div className="font-black text-slate-900">{bookings[0].assignedAmbulance.id.driverName || t.dispatchOfficer}</div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{t.ambulanceDriver2}</div>
+                                                        <div className="font-black text-slate-900 text-sm md:text-base truncate">{bookings[0].assignedAmbulance.id.driverName || t.dispatchOfficer}</div>
                                                     </div>
                                                 </div>
-                                                <a href={`tel:${bookings[0].assignedAmbulance.id.contactNumber}`} className="bg-red-500 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl shadow-red-500/30 hover:bg-red-600 transition-all flex items-center gap-2">
+                                                <a href={`tel:${bookings[0].assignedAmbulance.id.contactNumber}`} className="w-full sm:w-auto bg-red-500 text-white px-5 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl font-black text-xs md:text-sm shadow-xl shadow-red-500/30 hover:bg-red-600 transition-all flex items-center justify-center gap-2">
                                                     {t.contactDriver}
                                                 </a>
                                             </div>
@@ -756,7 +809,7 @@ const UserPortal = () => {
                                     </div>
                                 ) : (
                                     <div className="w-full h-full bg-slate-50 flex items-center justify-center">
-                                        <p className="text-slate-400 font-medium">{t.selectBooking}</p>
+                                        <p className="text-slate-400 font-medium px-6 text-center">{t.selectBooking}</p>
                                     </div>
                                 )}
                             </div>
@@ -764,6 +817,33 @@ const UserPortal = () => {
                     </div>
                 )}
             </main>
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex justify-around items-center z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] pb-safe">
+                <button
+                    onClick={() => setActiveTab('analyze')}
+                    className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'analyze' ? 'text-blue-600' : 'text-slate-400'}`}
+                >
+                    <LayoutDashboard size={20} className={activeTab === 'analyze' ? 'fill-blue-50' : ''} />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">{language === 'hi' ? 'ट्राइएज' : 'Triage'}</span>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('bookings')}
+                    className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'bookings' ? 'text-blue-600' : 'text-slate-400'}`}
+                >
+                    <MapIcon size={20} className={activeTab === 'bookings' ? 'fill-blue-50' : ''} />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">{language === 'hi' ? 'ट्रैकिंग' : 'Tracking'}</span>
+                </button>
+
+                <button
+                    onClick={logout}
+                    className="flex flex-col items-center gap-1 p-2 text-slate-400"
+                >
+                    <LogOut size={20} />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">{language === 'hi' ? 'लॉगआउट' : 'Logout'}</span>
+                </button>
+            </nav>
         </div>
     );
 };
