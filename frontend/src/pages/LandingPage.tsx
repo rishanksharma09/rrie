@@ -16,8 +16,8 @@ const LandingPage = () => {
             </div>
 
             {/* Language Toggle - Integrated & Minimal */}
-            <div className="absolute top-6 right-6 z-50">
-                <div className="glass-premium p-1 rounded-xl flex gap-1 border border-slate-200/50">
+            <div className="absolute top-6 right-6 z-[110]">
+                <div className="glass-premium p-1 rounded-xl flex gap-1 border border-slate-200/50 bg-white/40 backdrop-blur-xl shadow-lg">
                     <button
                         onClick={() => setLanguage('en')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${language === 'en' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
@@ -138,10 +138,10 @@ const LandingPage = () => {
                                 <div className="w-16 h-16 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-slate-900 group-hover:text-white transition-all duration-500 shadow-sm">
                                     <Truck size={32} />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">Ambulance Driver</h3>
-                                <p className="text-slate-500 font-medium leading-relaxed mb-10 flex-grow">Receive patient assignments and navigate to emergency locations.</p>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{t.ambulanceDriver}</h3>
+                                <p className="text-slate-500 font-medium leading-relaxed mb-10 flex-grow">{t.ambulanceDesc}</p>
                                 <div className="flex items-center gap-2 text-slate-900 font-bold text-sm uppercase tracking-widest group-hover:gap-4 transition-all">
-                                    <span>Open Portal</span>
+                                    <span>{t.openAmbulancePortal}</span>
                                     <ArrowRight size={18} />
                                 </div>
                             </div>
