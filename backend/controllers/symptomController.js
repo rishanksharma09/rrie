@@ -1,8 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import dotenv from 'dotenv';
 dotenv.config();
 
-const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const client = new OpenAI({
+    apiKey: process.env.MEGALLM_API_KEY,
+    baseURL: process.env.BASE_URL
+});
 
 export const analyzeSymptoms = async (req, res) => {
     try {
@@ -77,16 +80,17 @@ Return EXACTLY this JSON format:
         `;
 
 
-        const response = await client.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-            }
-        })
+        const response = await client.chat.completions.create({
+            model: 'gpt-4o', // Common model for MegaLLM, or use your specific one
+            messages: [
+                { role: 'system', content: 'You are a medical triage assistant. Return ONLY valid JSON.' },
+                { role: 'user', content: prompt }
+            ],
+            response_format: { type: "json_object" }
+        });
 
-        if (response.candidates && response.candidates.length > 0 && response.candidates[0].content.parts.length > 0) {
-            const text = response.candidates[0].content.parts[0].text;
+        if (response.choices && response.choices.length > 0) {
+            const text = response.choices[0].message.content;
             let jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             const jsonResponse = JSON.parse(jsonText);
 
