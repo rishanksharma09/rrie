@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboard, Shield, Activity, Truck, Tag, ArrowRight, Brain, Clock, Plus, Phone } from 'lucide-react';
+import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboard, Shield, Activity, Truck, Tag, ArrowRight, Brain, Clock, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import mapboxgl from 'mapbox-gl';
@@ -277,7 +277,7 @@ const UserPortal = () => {
                 confidence: `${((data.confidence || 0.8) * 100).toFixed(0)}%`,
                 reasoning: data.reasoning || "Analyzing symptoms and matching with nearest facility.",
                 emergency_type: data.emergency_type,
-                status: orch?.status || 'Pending',
+                status: orch?.status || (wantAmbulance ? 'Pending' : 'Referral Only'),
                 assignmentId: orch?.assignmentId,
                 risk_flags: data.risk_flags || [],
                 hospitalScore: orch?.hospital?.score || 0,
@@ -754,7 +754,7 @@ const UserPortal = () => {
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     {result.hospitalContact && (
                                                         <a href={`tel:${result.hospitalContact}`} className="flex items-center justify-center gap-3 bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold text-sm shadow-xl shadow-slate-900/10 hover:bg-slate-800 hover:-translate-y-1 transition-all">
-                                                            📞 {t.callHospital}
+                                                            {t.callHospital}
                                                         </a>
                                                     )}
                                                     {result.hospitalId && (
@@ -844,7 +844,7 @@ const UserPortal = () => {
 
                                                                     {(alt.contact || alt.contactNumber) && (
                                                                         <a href={`tel:${alt.contact || alt.contactNumber}`} className="inline-flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] bg-slate-100 px-4 py-2 rounded-xl group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                                                            📞 {alt.contact || alt.contactNumber}
+                                                                            {alt.contact || alt.contactNumber}
                                                                         </a>
                                                                     )}
                                                                 </div>
@@ -969,7 +969,6 @@ const UserPortal = () => {
                                                     href={`tel:${bookings[0].assignedAmbulance?.contactNumber}`}
                                                     className="w-full sm:w-auto bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black text-sm shadow-2xl shadow-slate-900/40 hover:bg-slate-800 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 group/btn"
                                                 >
-                                                    <Phone size={20} className="group-hover:rotate-12 transition-transform" />
                                                     <span className="uppercase tracking-widest">{t.contactDriver}</span>
                                                 </a>
                                             </div>
