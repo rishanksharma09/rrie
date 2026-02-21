@@ -22,7 +22,7 @@ const AmbulancePortal = () => {
         const verify = async () => {
             if (user && user.email) {
                 try {
-                    const response = await fetch('http://localhost:5000/api/auth/verify', {
+                    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: user.email, role: 'ambulance' })
@@ -46,7 +46,7 @@ const AmbulancePortal = () => {
     // 2. Setup Socket Connection
     useEffect(() => {
         if (ambulanceId && !socketRef.current) {
-            const socket = io('http://localhost:5000');
+            const socket = io(import.meta.env.VITE_BACKEND_URL);
             socketRef.current = socket;
 
             socket.on('connect', () => {
@@ -199,7 +199,21 @@ const AmbulancePortal = () => {
                                 ACCEPT MISSION
                             </button>
                             <button
-                                onClick={() => setIncomingEmergency(null)}
+                                onClick={() => {
+                                    if (socketRef.current && incomingEmergency && ambulanceId) {
+                                        console.log('[Pass] Emitting pass_to_next_unit:', {
+                                            assignmentId: incomingEmergency.assignmentId,
+                                            ambulanceId,
+                                        });
+                                        socketRef.current.emit('pass_to_next_unit', {
+                                            assignmentId: incomingEmergency.assignmentId,
+                                            ambulanceId,
+                                        });
+                                    } else {
+                                        console.warn('[Pass] Cannot emit — missing data:', { socket: !!socketRef.current, incomingEmergency, ambulanceId });
+                                    }
+                                    setIncomingEmergency(null);
+                                }}
                                 className="w-full mt-4 py-2 text-slate-400 text-sm font-bold hover:text-slate-800 transition-colors uppercase tracking-widest"
                             >
                                 Pass to Next Unit

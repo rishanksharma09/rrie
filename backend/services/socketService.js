@@ -1,7 +1,15 @@
 import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
 
-export const initSocketService = (io) => {
+export const initSocketService = async (io) => {
+    // Reset all ambulances to offline on server (re)start to avoid stale socketIds
+    try {
+        await Ambulance.updateMany({}, { isOnline: false, socketId: null });
+        console.log('[Socket] Cleared stale ambulance online statuses on startup.');
+    } catch (err) {
+        console.error('[Socket] Failed to reset ambulance statuses on startup:', err);
+    }
+
     // Map to track user socket IDs for live tracking forwarding
     // Key: userId (patientId), Value: socketId
     const userSockets = new Map();
@@ -9,6 +17,10 @@ export const initSocketService = (io) => {
     // Map to track hospital socket IDs for incoming patient alerts
     // Key: hospitalId (MongoDB _id), Value: socketId
     const hospitalSockets = new Map();
+
+    // Map to track live driver socket IDs in memory
+    // Key: ambulanceId (MongoDB _id string), Value: socketId
+    const driverSockets = new Map();
 
     io.on('connection', (socket) => {
         console.log(`[Socket] New connection: ${socket.id}`);
@@ -33,7 +45,9 @@ export const initSocketService = (io) => {
                 );
                 if (ambulance) {
                     socket.ambulanceId = ambulanceId;
-                    console.log(`[Socket] Driver registered successfully: ${ambulance.vehicleNumber} (ID: ${ambulance._id})`);
+                    const aid = String(ambulanceId);
+                    driverSockets.set(aid, socket.id);
+                    console.log(`[Socket] Driver registered: ${ambulance.vehicleNumber} (ID: ${aid}) → ${socket.id}`);
                     socket.emit('registration_success', { status: 'online', vehicleNumber: ambulance.vehicleNumber });
                 } else {
                     console.warn(`[Socket] Driver registration failed: Ambulance ${ambulanceId} not found in DB`);
@@ -153,6 +167,49 @@ export const initSocketService = (io) => {
             }
         });
 
+        // Pass to Next Unit — Driver declines and re-dispatches to others
+        socket.on('pass_to_next_unit', async ({ assignmentId, ambulanceId }) => {
+            const passingId = String(ambulanceId);
+            console.log(`[Socket] Pass to next unit: Assignment=${assignmentId}, passed by Ambulance=${passingId}`);
+            console.log(`[Socket] Live drivers in memory:`, [...driverSockets.keys()]);
+            try {
+                const assignment = await Assignment.findById(assignmentId);
+                if (!assignment || assignment.status !== 'Pending') {
+                    console.warn(`[Socket] Pass failed: Assignment ${assignmentId} not found or no longer Pending.`);
+                    return;
+                }
+
+                const emergencyPayload = {
+                    assignmentId: assignment._id,
+                    triage: assignment.triage,
+                    patientLocation: assignment.patientLocation,
+                    hospitalName: assignment.assignedHospital?.name
+                };
+
+                // Use in-memory driverSockets map — always has current live socket IDs
+                const otherSocketIds = [...driverSockets.entries()]
+                    .filter(([aid]) => aid !== passingId)
+                    .map(([, sid]) => sid);
+
+                console.log(`[Socket] Re-dispatching to ${otherSocketIds.length} other live driver(s).`);
+
+                if (otherSocketIds.length > 0) {
+                    otherSocketIds.forEach(sid => {
+                        console.log(`[Socket] Emitting NEW_EMERGENCY to socket: ${sid}`);
+                        io.to(sid).emit('NEW_EMERGENCY', emergencyPayload);
+                    });
+                } else {
+                    // No other drivers online — re-queue to same driver after 3s
+                    console.warn(`[Socket] No other drivers online. Re-queuing to same driver in 3s.`);
+                    setTimeout(() => {
+                        socket.emit('NEW_EMERGENCY', emergencyPayload);
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error(`[Socket] Pass to next unit error:`, error);
+            }
+        });
+
         // Notify Hospital — Patient pre-alerts their assigned hospital
         socket.on('notify_hospital', ({ hospitalId, alertData }) => {
             const hid = String(hospitalId);
@@ -176,12 +233,13 @@ export const initSocketService = (io) => {
         socket.on('disconnect', async () => {
             console.log(`[Socket] Disconnected: ${socket.id}`);
 
-            // If it's a driver, mark offline
+            // If it's a driver, mark offline and remove from in-memory map
             if (socket.ambulanceId) {
                 await Ambulance.findByIdAndUpdate(socket.ambulanceId, {
                     isOnline: false,
                     socketId: null
                 });
+                driverSockets.delete(String(socket.ambulanceId));
                 console.log(`[Socket] Driver offline: ${socket.ambulanceId}`);
             }
 
