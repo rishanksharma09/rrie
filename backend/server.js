@@ -1,8 +1,13 @@
 import http from 'http';
 import { Server } from 'socket.io';
+import express from 'express';   // 👈 ADD THIS
 import app from './app.js';
 import { initSocketService } from './services/socketService.js';
 import whatsappRoutes from "./routes/whatsapp.routes.js";
+
+// 👇 ADD THESE TWO LINES (CRITICAL FOR TWILIO)
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 app.use("/api/whatsapp", whatsappRoutes);
 
@@ -12,17 +17,14 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow all for now, restrict in production
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
-// Attach Socket.IO to global object if needed for orchestration
-// Or better, pass it to orchestration if we change its signature
-// For now, init the socket service which handles its own logic
+// Init socket service
 initSocketService(io);
 
-// Export io for use in other services (like orchestration)
 export { io };
 
 server.listen(PORT, () => {
