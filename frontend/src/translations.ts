@@ -74,6 +74,7 @@ export const translations = {
         calculating: 'CALCULATING',
         emergencyCenter: 'Emergency Center',
         pendingDispatch: 'Pending Dispatch',
+        assigningAmbulance: 'Assigning ambulance...',
         dispatchOfficer: 'Dispatch Officer',
 
         // Toggle Button
@@ -155,6 +156,7 @@ export const translations = {
         calculating: 'गणना हो रही है',
         emergencyCenter: 'आपातकालीन केंद्र',
         pendingDispatch: 'डिस्पैच प्रतीक्षित',
+        assigningAmbulance: 'एम्बुलेंस असाइन की जा रही है...',
         dispatchOfficer: 'डिस्पैच अधिकारी',
 
         // Toggle Button

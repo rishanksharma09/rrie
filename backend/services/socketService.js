@@ -6,10 +6,12 @@ import Assignment from '../models/Assignment.js';
 export const driverSockets = new Map();
 
 export const initSocketService = async (io) => {
-    // Reset all ambulances to offline on server (re)start to avoid stale socketIds
+    console.log('[Socket] Initializing Socket Service...');
+    // Reset all ambulances to offline and Available on server (re)start
     try {
-        await Ambulance.updateMany({}, { isOnline: false, socketId: null });
-        console.log('[Socket] Cleared stale ambulance online statuses on startup.');
+        console.log('[Socket] Resetting all ambulance statuses in DB...');
+        await Ambulance.updateMany({}, { isOnline: false, socketId: null, status: 'Available' });
+        console.log('[Socket] Cleared stale ambulance statuses and set all to Available on startup.');
     } catch (err) {
         console.error('[Socket] Failed to reset ambulance statuses on startup:', err);
     }

@@ -22,12 +22,14 @@ const AmbulancePortal = () => {
         const verify = async () => {
             if (user && user.email) {
                 try {
+                    console.log("[Auth] Verifying driver:", user.email);
                     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: user.email, role: 'ambulance' })
                     });
                     const data = await response.json();
+                    console.log("[Auth] Verification response:", data);
                     if (data.authorized) {
                         setAuthorized(true);
                         setAmbulanceId(data.details.id);
@@ -35,7 +37,7 @@ const AmbulancePortal = () => {
                         setAuthorized(false);
                     }
                 } catch (error) {
-                    console.error("Verification error", error);
+                    console.error("[Auth] Verification error:", error);
                     setAuthorized(false);
                 }
             }
@@ -46,6 +48,7 @@ const AmbulancePortal = () => {
     // 2. Setup Socket Connection
     useEffect(() => {
         if (ambulanceId && !socketRef.current) {
+            console.log("[Socket] Initializing driver connection for ID:", ambulanceId);
             const socket = io(import.meta.env.VITE_BACKEND_URL);
             socketRef.current = socket;
 
@@ -54,8 +57,12 @@ const AmbulancePortal = () => {
                 socket.emit('register_driver', { ambulanceId });
             });
 
+            socket.on('registration_success', (data) => {
+                console.log("[Socket] Registration successful:", data);
+            });
+
             socket.on('NEW_EMERGENCY', (emergency) => {
-                console.log("[Socket] New emergency alert received.");
+                console.log("[Socket] NEW EMERGENCY ALERT:", emergency);
                 setIncomingEmergency(emergency);
             });
 

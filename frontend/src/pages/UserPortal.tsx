@@ -50,6 +50,8 @@ const UserPortal = () => {
         risk_flags?: string[];
         hospitalScore?: string | number;
         alternatives?: any[];
+        status?: string;
+        assignmentId?: string;
     }
 
     const [result, setResult] = useState<ReferralResult | null>(null);
@@ -122,6 +124,19 @@ const UserPortal = () => {
                 const exists = prev.find(b => b._id === assignment._id);
                 if (exists) return prev.map(b => b._id === assignment._id ? assignment : b);
                 return [assignment, ...prev];
+            });
+
+            // Update the active result block if it matches this assignment
+            setResult(prev => {
+                if (prev && prev.assignmentId === assignment._id) {
+                    return {
+                        ...prev,
+                        status: assignment.status,
+                        ambulance: assignment.assignedAmbulance?.vehicleNumber || prev.ambulance,
+                        eta: assignment.assignedAmbulance?.eta || prev.eta
+                    };
+                }
+                return prev;
             });
         });
 
@@ -225,12 +240,14 @@ const UserPortal = () => {
                 hospitalAddress: orch?.hospital?.location?.address || orch?.hospital?.address,
                 hospitalContact: orch?.hospital?.contact || orch?.hospital?.contactNumber,
                 assignmentReason: orch?.hospital?.reason,
-                eta: orch?.assignedAmbulance?.eta || (orch?.ambulance?.message ? "N/A" : "15 mins"),
-                ambulance: orch?.ambulance?.vehicleNumber || orch?.ambulance?.message || "Dispatching...",
+                eta: orch?.assignedAmbulance?.eta || (orch?.ambulance?.message ? "N/A" : t.calculating),
+                ambulance: orch?.assignedAmbulance?.vehicleNumber || orch?.ambulance?.vehicleNumber || (orch?.ambulance?.message ? orch.ambulance.message : t.assigningAmbulance),
                 priority: data.severity ? data.severity.charAt(0).toUpperCase() + data.severity.slice(1) : 'Medium',
                 confidence: `${((data.confidence || 0.8) * 100).toFixed(0)}%`,
                 reasoning: data.reasoning || "Analyzing symptoms and matching with nearest facility.",
                 emergency_type: data.emergency_type,
+                status: orch?.status || 'Pending',
+                assignmentId: orch?.assignmentId,
                 risk_flags: data.risk_flags || [],
                 hospitalScore: orch?.hospital?.score || 0,
                 alternatives: orch?.alternatives || []
@@ -278,7 +295,9 @@ const UserPortal = () => {
             const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/assignments/my-bookings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const activeDispatches = response.data.filter((b: any) => b.status === 'Dispatched');
+            const activeDispatches = response.data.filter((b: any) =>
+                ['Pending', 'Dispatched', 'Arrived'].includes(b.status)
+            );
             setBookings(activeDispatches);
         } catch (error) {
             console.error("Failed to fetch bookings", error);
@@ -290,50 +309,8 @@ const UserPortal = () => {
     useEffect(() => {
         if (activeTab === 'bookings') {
             fetchBookings();
-
-            if (user && !socketRef.current) {
-                const socket = io('http://localhost:5000');
-                socketRef.current = socket;
-
-                socket.on('connect', () => {
-                    console.log("[Socket] Connected to mission control:", socket.id);
-                    socket.emit('register_user', { userId: user.uid });
-                });
-
-                socket.on('DRIVER_LIVE_LOCATION', (data) => {
-                    console.log("[Socket] Live location update:", data);
-                    if (ambulanceMarkerRef.current && mapRef.current) {
-                        const newCoords: [number, number] = [data.coordinates[0], data.coordinates[1]];
-                        ambulanceMarkerRef.current.setLngLat(newCoords);
-                        mapRef.current.easeTo({ center: newCoords, duration: 1000 });
-                    }
-                });
-
-                socket.on('EMERGENCY_ASSIGNED', (assignment) => {
-                    console.log("[Socket] Emergency assigned in real-time:", assignment);
-                    setBookings(prev => {
-                        const exists = prev.find(b => b._id === assignment._id);
-                        if (exists) {
-                            return prev.map(b => b._id === assignment._id ? assignment : b);
-                        }
-                        return [assignment, ...prev];
-                    });
-                });
-
-                socket.on('disconnect', () => {
-                    console.log("[Socket] Disconnected from mission control");
-                });
-            }
         }
-
-        return () => {
-            if (socketRef.current) {
-                console.log("[Socket] Releasing mission control link");
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
-        };
-    }, [activeTab, user]);
+    }, [activeTab]);
 
     // Tracking Map logic
     useEffect(() => {
@@ -661,10 +638,14 @@ const UserPortal = () => {
                                                 </div>
                                             </div>
 
-                                            <div className={`p-8 rounded-[2rem] border-2 flex flex-col justify-center ${result.ambulance.includes('not requested') ? 'border-dashed border-slate-200 bg-white' : 'border-red-100 bg-red-50/30'}`}>
+                                            <div className={`p-8 rounded-[2rem] border-2 flex flex-col justify-center ${(!result.ambulance || result.status === 'Pending') ? 'border-dashed border-slate-200 bg-white' : 'border-red-100 bg-red-50/30'}`}>
                                                 <div className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-4">{t.transportStatus}</div>
-                                                <h4 className="text-2xl font-black text-slate-900 mb-2">{result.ambulance}</h4>
-                                                <div className="text-lg font-bold text-red-600">{t.eta}: {result.eta}</div>
+                                                <h4 className="text-2xl font-black text-slate-900 mb-2">
+                                                    {result.status === 'Pending' ? t.assigningAmbulance : result.ambulance}
+                                                </h4>
+                                                {result.status !== 'Pending' && (
+                                                    <div className="text-lg font-bold text-red-600">{t.eta}: {result.eta}</div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -732,16 +713,20 @@ const UserPortal = () => {
                                     bookings.map((booking) => (
                                         <div key={booking._id} className="bg-white p-6 rounded-3xl border-2 border-transparent hover:border-blue-500/30 transition-all cursor-pointer shadow-lg shadow-slate-200/50 group">
                                             <div className="flex items-center justify-between mb-4">
-                                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${booking.status === 'Dispatched' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                                                    {booking.status}
+                                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-600' :
+                                                    booking.status === 'Dispatched' ? 'bg-red-100 text-red-600' :
+                                                        'bg-green-100 text-green-600'}`}>
+                                                    {booking.status === 'Pending' ? t.assigningAmbulance : booking.status}
                                                 </span>
                                                 <span className="text-[10px] text-slate-400 font-bold">{new Date(booking.createdAt).toLocaleTimeString()}</span>
                                             </div>
                                             <h4 className="font-black text-slate-900 mb-1 group-hover:text-blue-600 transition-colors uppercase text-sm tracking-tight">{booking.assignedHospital?.name || t.emergencyCenter}</h4>
-                                            <p className="text-xs text-slate-500 font-bold mb-4">{booking.assignedAmbulance?.vehicleNumber || t.pendingDispatch}</p>
-                                            <div className="flex gap-2">
-                                                <div className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1.5 rounded-lg border border-blue-100 flex-1 text-center">{t.eta}: {booking.assignedAmbulance?.eta || t.calculating}</div>
-                                            </div>
+                                            <p className="text-xs text-slate-500 font-bold mb-4">{booking.assignedAmbulance?.vehicleNumber || t.assigningAmbulance}</p>
+                                            {booking.status !== 'Pending' && (
+                                                <div className="flex gap-2">
+                                                    <div className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1.5 rounded-lg border border-blue-100 flex-1 text-center">{t.eta}: {booking.assignedAmbulance?.eta || t.calculating}</div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 )}

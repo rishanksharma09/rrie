@@ -2,7 +2,7 @@ import Hospital from '../models/Hospital.js';
 import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
 
-import { io } from '../server.js';
+import { getIO } from '../config/socket.js';
 import { driverSockets } from './socketService.js';
 
 // --- Helper: Haversine Distance (in km) ---
@@ -195,10 +195,16 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         assignmentId = savedAssignment._id;
 
         // --- Notify Nearby Drivers ---
+        const io = getIO();
         if (savedAssignment.status === 'Pending' && io) {
             try {
-                console.log(`[Orchestration] Searching for drivers near: [${patientLocation.lng}, ${patientLocation.lat}]`);
-                const nearbyDrivers = await Ambulance.find({
+                console.log(`[Orchestration] DriverSockets Map Size: ${driverSockets.size}`);
+                for (let [id, sid] of driverSockets.entries()) {
+                    console.log(`[Orchestration]   - Registered Driver ID: ${id}, Socket: ${sid}`);
+                }
+
+                console.log(`[Orchestration] Searching for drivers near: [${patientLocation.lng}, ${patientLocation.lat}] with status: Available and isOnline: true`);
+                const query = {
                     status: 'Available',
                     isOnline: true,
                     location: {
@@ -207,28 +213,46 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                                 type: 'Point',
                                 coordinates: [patientLocation.lng, patientLocation.lat]
                             },
-                            $maxDistance: 1000000 // Increase to 1000km for testing
+                            $maxDistance: 5000000
                         }
                     }
-                });
+                };
+                console.log(`[Orchestration] Query JSON: ${JSON.stringify(query)}`);
+                let nearbyDrivers = await Ambulance.find(query);
 
-                console.log(`[Orchestration] Found ${nearbyDrivers.length} online drivers within range.`);
+                if (nearbyDrivers.length === 0) {
+                    console.log("[Orchestration] No 'Available' drivers found. Checking for ANY online drivers...");
+                    const anyOnline = await Ambulance.find({ isOnline: true });
+                    console.log(`[Orchestration] Found ${anyOnline.length} total online drivers (regardless of status or range).`);
+                    anyOnline.forEach(d => console.log(`  - ${d.vehicleNumber}: Status=${d.status}, ID=${d._id}, SocketId=${d.socketId}`));
+                }
+
+                console.log(`[Orchestration] Alerting ${nearbyDrivers.length} available drivers.`);
 
                 nearbyDrivers.forEach(driver => {
                     const aid = String(driver._id);
                     const liveSocketId = driverSockets.get(aid) || driver.socketId;
-                    console.log(`[Orchestration] Alerting driver: ${driver.vehicleNumber} (Live socket: ${liveSocketId})`);
+                    console.log(`[Orchestration] Driver ${driver.vehicleNumber} (ID: ${aid}) - Online: ${driver.isOnline}, Status: ${driver.status}, SocketId: ${liveSocketId}`);
+
                     if (liveSocketId) {
+                        console.log(`[Orchestration] EMITTING NEW_EMERGENCY to socket: ${liveSocketId}`);
                         io.to(liveSocketId).emit('NEW_EMERGENCY', {
                             assignmentId: savedAssignment._id,
                             triage: savedAssignment.triage,
                             patientLocation: savedAssignment.patientLocation,
                             hospitalName: bestHospital.name
                         });
+                    } else {
+                        console.warn(`[Orchestration] FAILED TO EMIT: No socket ID found for driver ${driver.vehicleNumber}`);
                     }
                 });
             } catch (socketError) {
                 console.error("[Orchestration] Socket notification error:", socketError);
+            }
+        } else {
+            console.log(`[Orchestration] Skip notify: assignment status is ${savedAssignment.status}. io object present: ${!!io}`);
+            if (savedAssignment.status === 'Pending' && !io) {
+                console.error("[Orchestration] CRITICAL: io object is NULL! Socket notifications will not work.");
             }
         }
     } catch (saveError) {

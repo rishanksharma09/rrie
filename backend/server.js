@@ -1,9 +1,10 @@
 import http from 'http';
 import { Server } from 'socket.io';
-import express from 'express';   // 👈 ADD THIS
+import express from 'express';
 import app from './app.js';
 import { initSocketService } from './services/socketService.js';
 import whatsappRoutes from "./routes/whatsapp.routes.js";
+import { setIO } from './config/socket.js';
 
 // 👇 ADD THESE TWO LINES (CRITICAL FOR TWILIO)
 app.use(express.urlencoded({ extended: false }));
@@ -22,10 +23,11 @@ const io = new Server(server, {
     }
 });
 
+// Store for cross-module access
+setIO(io);
+
 // Init socket service
 initSocketService(io);
-
-export { io };
 
 server.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
