@@ -165,7 +165,7 @@ const UserPortal = () => {
             }
             payload.wantAmbulance = wantAmbulance;
 
-            const response = await axios.post('http://localhost:5000/api/symptoms/analyze', payload, {
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/symptoms/analyze`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = response.data;
@@ -204,7 +204,7 @@ const UserPortal = () => {
         setIsLoadingBookings(true);
         try {
             const token = await user.getIdToken();
-            const response = await axios.get('http://localhost:5000/api/assignments/my-bookings', {
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/assignments/my-bookings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Only show dispatches (hide Referral Only)
@@ -223,7 +223,7 @@ const UserPortal = () => {
 
             // Initialize Socket Connection for Tracking
             if (user && !socketRef.current) {
-                const socket = io('http://localhost:5000');
+                const socket = io(import.meta.env.VITE_BACKEND_URL);
                 socketRef.current = socket;
 
                 socket.on('connect', () => {

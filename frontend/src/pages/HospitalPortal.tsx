@@ -31,7 +31,7 @@ const HospitalPortal = () => {
             if (user && user.email) {
                 try {
                     // 1. Verify Role
-                    const authResponse = await fetch('http://localhost:5000/api/auth/verify', {
+                    const authResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: user.email, role: 'hospital' })
@@ -42,7 +42,7 @@ const HospitalPortal = () => {
                         setAuthorized(true);
                         // 2. Fetch Hospital Data
                         setLoadingData(true);
-                        const dataResponse = await fetch(`http://localhost:5000/api/hospital?email=${user.email}`);
+                        const dataResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospital?email=${user.email}`);
                         if (dataResponse.ok) {
                             const data = await dataResponse.json();
                             setHospitalData(data);
@@ -107,7 +107,7 @@ const HospitalPortal = () => {
                 status: hospitalData.status // Include updated status
             };
 
-            const response = await fetch('http://localhost:5000/api/hospital', {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospital`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: user.email, updates })

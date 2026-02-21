@@ -22,7 +22,7 @@ const AmbulancePortal = () => {
         const verify = async () => {
             if (user && user.email) {
                 try {
-                    const response = await fetch('http://localhost:5000/api/auth/verify', {
+                    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: user.email, role: 'ambulance' })
@@ -46,7 +46,7 @@ const AmbulancePortal = () => {
     // 2. Setup Socket Connection
     useEffect(() => {
         if (ambulanceId && !socketRef.current) {
-            const socket = io('http://localhost:5000');
+            const socket = io(import.meta.env.VITE_BACKEND_URL);
             socketRef.current = socket;
 
             socket.on('connect', () => {
