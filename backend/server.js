@@ -4,7 +4,8 @@ import express from 'express';   // 👈 ADD THIS
 import app from './app.js';
 import { initSocketService } from './services/socketService.js';
 import whatsappRoutes from "./routes/whatsapp.routes.js";
-
+import dotenv from "dotenv";
+dotenv.config();
 
 
 app.post("/test", (req, res) => {
