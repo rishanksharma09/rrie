@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 import routes from './routes/index.js';
+import whatsappRoutes from "./routes/whatsapp.routes.js";
+
 
 dotenv.config();
 
@@ -20,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+app.use("/api/whatsapp", whatsappRoutes);
 
 // Routes
 app.use('/api', routes);

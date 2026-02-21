@@ -5,11 +5,18 @@ import app from './app.js';
 import { initSocketService } from './services/socketService.js';
 import whatsappRoutes from "./routes/whatsapp.routes.js";
 
+
+
+app.post("/test", (req, res) => {
+    console.log("Test route hit");
+    console.log(req.body);
+    res.send("OK");
+});
+
 // 👇 ADD THESE TWO LINES (CRITICAL FOR TWILIO)
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-app.use("/api/whatsapp", whatsappRoutes);
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
