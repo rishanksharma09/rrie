@@ -2,6 +2,9 @@ import http from 'http';
 import { Server } from 'socket.io';
 import app from './app.js';
 import { initSocketService } from './services/socketService.js';
+import whatsappRoutes from "./routes/whatsapp.routes.js";
+
+app.use("/api/whatsapp", whatsappRoutes);
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
