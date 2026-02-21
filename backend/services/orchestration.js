@@ -3,6 +3,7 @@ import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
 
 import { io } from '../server.js';
+import { driverSockets } from './socketService.js';
 
 // --- Helper: Haversine Distance (in km) ---
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -214,9 +215,11 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                 console.log(`[Orchestration] Found ${nearbyDrivers.length} online drivers within range.`);
 
                 nearbyDrivers.forEach(driver => {
-                    console.log(`[Orchestration] Alerting driver: ${driver.vehicleNumber} (Socket: ${driver.socketId})`);
-                    if (driver.socketId) {
-                        io.to(driver.socketId).emit('NEW_EMERGENCY', {
+                    const aid = String(driver._id);
+                    const liveSocketId = driverSockets.get(aid) || driver.socketId;
+                    console.log(`[Orchestration] Alerting driver: ${driver.vehicleNumber} (Live socket: ${liveSocketId})`);
+                    if (liveSocketId) {
+                        io.to(liveSocketId).emit('NEW_EMERGENCY', {
                             assignmentId: savedAssignment._id,
                             triage: savedAssignment.triage,
                             patientLocation: savedAssignment.patientLocation,

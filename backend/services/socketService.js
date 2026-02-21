@@ -1,6 +1,10 @@
 import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
 
+// Module-level map — exported so orchestration.js can use live socket IDs
+// Key: ambulanceId (MongoDB _id string), Value: socketId
+export const driverSockets = new Map();
+
 export const initSocketService = async (io) => {
     // Reset all ambulances to offline on server (re)start to avoid stale socketIds
     try {
@@ -18,9 +22,7 @@ export const initSocketService = async (io) => {
     // Key: hospitalId (MongoDB _id), Value: socketId
     const hospitalSockets = new Map();
 
-    // Map to track live driver socket IDs in memory
-    // Key: ambulanceId (MongoDB _id string), Value: socketId
-    const driverSockets = new Map();
+    // driverSockets is now module-level (exported above)
 
     io.on('connection', (socket) => {
         console.log(`[Socket] New connection: ${socket.id}`);
@@ -173,10 +175,22 @@ export const initSocketService = async (io) => {
             console.log(`[Socket] Pass to next unit: Assignment=${assignmentId}, passed by Ambulance=${passingId}`);
             console.log(`[Socket] Live drivers in memory:`, [...driverSockets.keys()]);
             try {
-                const assignment = await Assignment.findById(assignmentId);
-                if (!assignment || assignment.status !== 'Pending') {
-                    console.warn(`[Socket] Pass failed: Assignment ${assignmentId} not found or no longer Pending.`);
+                const assignment = await Assignment.findById(String(assignmentId));
+                console.log(`[Socket] Assignment lookup: found=${!!assignment}, status=${assignment?.status}`);
+                if (!assignment) {
+                    console.warn(`[Socket] Pass failed: Assignment ${assignmentId} not found in DB.`);
                     return;
+                }
+                if (!['Pending', 'Dispatched'].includes(assignment.status)) {
+                    console.warn(`[Socket] Pass skipped: Assignment has status '${assignment.status}' — cannot re-pass.`);
+                    return;
+                }
+                // If the driver already accepted, reset back to Pending so next driver can accept
+                if (assignment.status === 'Dispatched') {
+                    assignment.status = 'Pending';
+                    assignment.assignedAmbulance = undefined;
+                    await assignment.save();
+                    console.log(`[Socket] Reset assignment ${assignmentId} from Dispatched back to Pending.`);
                 }
 
                 const emergencyPayload = {
