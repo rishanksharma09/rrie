@@ -6,11 +6,16 @@ const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const analyzeSymptoms = async (req, res) => {
     try {
-        const { symptoms } = req.body;
+        const { symptoms, language } = req.body;
 
         if (!symptoms) {
             return res.status(400).json({ message: "Symptoms are required" });
         }
+
+        const isHindi = language === 'hi';
+        const languageInstruction = isHindi
+            ? `\n- Write the "reasoning" field in Hindi (Devanagari script). All other fields must remain in English as specified.`
+            : `\n- Write the "reasoning" field in English.`;
 
         const prompt = `
         Analyze the following medical symptoms and provide a structured JSON response.
@@ -23,7 +28,7 @@ export const analyzeSymptoms = async (req, res) => {
 - DO NOT recommend ambulances.
 - DO NOT add extra fields.
 - Return ONLY valid JSON.
-- Keep reasoning to ONE short sentence.
+- Keep reasoning to ONE short sentence.${languageInstruction}
 
 --------------------------------
 
@@ -54,7 +59,7 @@ risk_flags (array of zero or more from):
 - breathing_distress
 
 reasoning:
-- one short sentence explaining the classification
+- one short sentence explaining the classification${isHindi ? ' (in Hindi)' : ''}
 
 --------------------------------
 
@@ -70,6 +75,7 @@ Return EXACTLY this JSON format:
 
 
         `;
+
 
         const response = await client.models.generateContent({
             model: 'gemini-flash-latest',

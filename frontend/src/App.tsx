@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { useAuthStore } from './store/useAuthStore';
+import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
 import LandingPage from './pages/LandingPage';
 import UserPortal from './pages/UserPortal';
@@ -29,17 +30,19 @@ function App() {
   }, [setUser, setLoading]);
 
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/user" element={<UserPortal />} />
-        <Route path="/hospital" element={<HospitalPortal />} />
-        <Route path="/hospital/login" element={<HospitalLogin />} />
-        <Route path="/ambulance" element={<AmbulancePortal />} />
-        <Route path="/ambulance/login" element={<AmbulanceLogin />} />
-      </Routes>
-    </Router>
+    <LanguageProvider>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/user" element={<UserPortal />} />
+          <Route path="/hospital" element={<HospitalPortal />} />
+          <Route path="/hospital/login" element={<HospitalLogin />} />
+          <Route path="/ambulance" element={<AmbulancePortal />} />
+          <Route path="/ambulance/login" element={<AmbulanceLogin />} />
+        </Routes>
+      </Router>
+    </LanguageProvider>
   );
 }
 
