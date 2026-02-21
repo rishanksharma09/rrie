@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, Bed, Bell, Activity, AlertCircle, X, Wifi } from 'lucide-react';
+import { LayoutDashboard, Users, Bed, Bell, Activity, AlertCircle, X, Wifi, LogOut, Settings, BarChart3, ClipboardList, Shield, Clipboard, MapPin, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { io, Socket } from 'socket.io-client';
@@ -142,10 +142,26 @@ const HospitalPortal = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold mb-4">Hospital Portal</h1>
-                    <Link to="/hospital/login" className="text-blue-600 hover:underline">Go to Login</Link>
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none -z-10 text-slate-900/5">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 blur-[120px] rounded-full" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[40%] bg-teal-50/40 blur-[100px] rounded-full" />
+                </div>
+
+                <div className="max-w-md w-full glass-premium rounded-[2.5rem] p-10 border border-white shadow-2xl text-center">
+                    <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center text-blue-400 mx-auto mb-8 shadow-2xl shadow-slate-900/20">
+                        <Activity size={40} />
+                    </div>
+                    <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Hospital Portal</h1>
+                    <p className="text-slate-500 font-medium mb-10 leading-relaxed">Secure gateway for medical facility staff. Please authenticate to manage bed availability and live alerts.</p>
+
+                    <Link to="/hospital/login" className="block w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-slate-800 transition-all hover:translate-y-[-2px] active:translate-y-0">
+                        Go to Secure Login
+                    </Link>
+
+                    <div className="mt-8">
+                        <Link to="/" className="text-slate-400 font-bold text-sm uppercase tracking-widest hover:text-slate-900 transition-colors">← Return Home</Link>
+                    </div>
                 </div>
             </div>
         );
@@ -153,14 +169,20 @@ const HospitalPortal = () => {
 
     if (authorized === false) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md">
-                    <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
-                    <h2 className="text-xl font-bold text-slate-900 mb-2">Access Denied</h2>
-                    <p className="text-slate-600 mb-6">Your account is not authorized for the Hospital Portal.</p>
-                    <button onClick={() => logout()} className="text-red-600 font-medium hover:underline">Sign Out</button>
-                    <div className="mt-4">
-                        <Link to="/" className="text-slate-400 text-sm hover:text-slate-600">Back to Home</Link>
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 relative overflow-hidden">
+                <div className="max-w-md w-full glass-premium rounded-[2.5rem] p-10 border border-white shadow-2xl text-center">
+                    <div className="w-20 h-20 bg-red-100 rounded-3xl flex items-center justify-center text-red-600 mx-auto mb-8">
+                        <AlertCircle size={40} />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Access Denied</h2>
+                    <p className="text-slate-500 font-medium mb-10 leading-relaxed">Your account is not authorized as a verified Health Facility admin. Contact support if you believe this is an error.</p>
+
+                    <button onClick={() => logout()} className="w-full py-5 bg-red-600/10 text-red-600 rounded-2xl font-black text-lg border border-red-200 hover:bg-red-600 hover:text-white transition-all">
+                        Sign Out
+                    </button>
+
+                    <div className="mt-8">
+                        <Link to="/" className="text-slate-400 font-bold text-sm uppercase tracking-widest hover:text-slate-900 transition-colors">Back to Home</Link>
                     </div>
                 </div>
             </div>
@@ -168,224 +190,387 @@ const HospitalPortal = () => {
     }
 
     if (authorized === null) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
+                <div className="w-16 h-16 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin" />
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Authenticating Secure Layer...</div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 flex flex-col">
+        <div className="min-h-screen bg-[#F8FAFC] flex font-sans overflow-x-hidden">
+            {/* Gradient Orbs Background */}
+            <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10">
+                <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[50%] bg-blue-100/30 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-5%] left-[10%] w-[30%] h-[40%] bg-teal-50/40 blur-[100px] rounded-full" />
+            </div>
 
-
-            <main className="flex-grow p-6 grid md:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
-                {/* Dashboard Title */}
-                <div className="md:col-span-12 flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                            <LayoutDashboard size={20} />
-                        </div>
-                        <div>
-                            <h1 className="font-bold text-slate-800 text-lg leading-tight">{hospitalData ? hospitalData.name : 'Loading...'}</h1>
-                            <div className={`text-xs font-medium flex items-center gap-1 
-                                ${hospitalData?.status === 'active' ? 'text-green-600' :
-                                    hospitalData?.status === 'overloaded' ? 'text-orange-600' : 'text-red-600'}`}>
-                                <span className={`w-2 h-2 rounded-full animate-pulse 
-                                    ${hospitalData?.status === 'active' ? 'bg-green-500' :
-                                        hospitalData?.status === 'overloaded' ? 'bg-orange-500' : 'bg-red-500'}`} />
-                                {hospitalData?.status ? hospitalData.status.toUpperCase() : 'LOADING'}
-                            </div>
-                        </div>
+            {/* Desktop Sidebar - Premium Style */}
+            <aside className="hidden lg:flex w-80 bg-white/40 backdrop-blur-3xl border-r border-slate-200/50 flex-col py-10 px-8 fixed h-full z-[100]">
+                <div className="flex items-center gap-4 px-2 mb-12">
+                    <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 shadow-xl shadow-slate-900/20">
+                        <Activity size={28} />
                     </div>
-                    <div className="text-right hidden md:block">
-                        <div className="text-sm font-bold text-slate-800">Welcome, {user.displayName}</div>
+                    <div className="flex flex-col">
+                        <span className="font-black text-2xl text-slate-900 tracking-tighter uppercase leading-none">RRIE</span>
+                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.4em] mt-1">Hospital</span>
                     </div>
                 </div>
 
-                {/* Left Panel: Facility Controls */}
-                <div className="md:col-span-4 space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                        <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Bed size={18} className="text-slate-400" />
-                            Bed Availability
-                        </h2>
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="font-bold text-slate-800 mb-2">Hospital Status</h3>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <button
-                                        onClick={() => setHospitalData({ ...hospitalData, status: 'active' })}
-                                        className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${hospitalData?.status === 'active'
-                                            ? 'bg-green-50 border-green-200 text-green-700 ring-2 ring-green-500/20'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                                    >
-                                        Active
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setHospitalData({ ...hospitalData, status: 'overloaded' });
-                                            setBeds({ icu: 0, er: 0 });
-                                        }}
-                                        className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${hospitalData?.status === 'overloaded'
-                                            ? 'bg-orange-50 border-orange-200 text-orange-700 ring-2 ring-orange-500/20'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                                    >
-                                        Overloaded
-                                    </button>
-                                    <button
-                                        onClick={() => setHospitalData({ ...hospitalData, status: 'offline' })}
-                                        className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${hospitalData?.status === 'offline'
-                                            ? 'bg-red-50 border-red-200 text-red-700 ring-2 ring-red-500/20'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                                    >
-                                        Offline
-                                    </button>
-                                </div>
-                            </div>
+                <div className="space-y-6 flex-1">
+                    <div className="space-y-2">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-3">Management</div>
 
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-slate-600">ICU Beds</span>
-                                    <span className="font-bold text-slate-900">{beds.icu} / 20</span>
-                                </div>
-                                <input
-                                    type="range" min="0" max="20" value={beds.icu}
-                                    onChange={(e) => setBeds({ ...beds, icu: parseInt(e.target.value) })}
-                                    className="w-full accent-blue-600"
-                                />
-                            </div>
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-slate-600">ER Beds</span>
-                                    <span className="font-bold text-slate-900">{beds.er} / 40</span>
-                                </div>
-                                <input
-                                    type="range" min="0" max="40" value={beds.er}
-                                    onChange={(e) => setBeds({ ...beds, er: parseInt(e.target.value) })}
-                                    className="w-full accent-green-600"
-                                />
-                            </div>
-                        </div>
+                        <button className="w-full p-4 rounded-2xl flex items-center gap-4 bg-slate-900 text-white shadow-xl shadow-slate-900/20 transition-all">
+                            <LayoutDashboard size={20} className="text-blue-400" />
+                            <span className="font-bold text-sm uppercase tracking-widest">Dashboard</span>
+                        </button>
+
+                        <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all group">
+                            <ClipboardList size={20} className="group-hover:text-blue-600" />
+                            <span className="font-bold text-sm uppercase tracking-widest">Registrations</span>
+                        </button>
+
+                        <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all group">
+                            <Settings size={20} className="group-hover:text-blue-600" />
+                            <span className="font-bold text-sm uppercase tracking-widest">Settings</span>
+                        </button>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                        <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Users size={18} className="text-slate-400" />
-                            Specialists & Equipment
-                        </h2>
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-2">Specialists</h3>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">Neurologist</span>
-                                <input type="checkbox" checked={staff.neuro} onChange={(e) => setStaff({ ...staff, neuro: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">Cardiologist</span>
-                                <input type="checkbox" checked={staff.cardio} onChange={(e) => setStaff({ ...staff, cardio: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">Orthopedic</span>
-                                <input type="checkbox" checked={staff.ortho} onChange={(e) => setStaff({ ...staff, ortho: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">Pediatrician</span>
-                                <input type="checkbox" checked={staff.peds} onChange={(e) => setStaff({ ...staff, peds: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-4">Equipment</h3>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">CT Scan</span>
-                                <input type="checkbox" checked={staff.ct} onChange={(e) => setStaff({ ...staff, ct: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">MRI Machine</span>
-                                <input type="checkbox" checked={staff.mri} onChange={(e) => setStaff({ ...staff, mri: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">Ventilator</span>
-                                <input type="checkbox" checked={staff.vent} onChange={(e) => setStaff({ ...staff, vent: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                            <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer">
-                                <span className="text-sm font-medium text-slate-700">Cath Lab</span>
-                                <input type="checkbox" checked={staff.cath} onChange={(e) => setStaff({ ...staff, cath: e.target.checked })} className="w-5 h-5 accent-blue-600 rounded" />
-                            </label>
-                        </div>
-                        <button
-                            onClick={handleUpdate}
-                            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors">
-                            Update Facility Status
+                    <div className="pt-6 border-t border-slate-100">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-3">Analytics</div>
+                        <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all group">
+                            <BarChart3 size={20} className="group-hover:text-blue-600" />
+                            <span className="font-bold text-sm uppercase tracking-widest">Performance</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Right Panel: Incoming Alerts */}
-                <div className="md:col-span-8">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col">
-                        <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                                <Bell size={18} className="text-red-500" />
-                                Incoming Patient Alerts
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                {socketConnected ? (
-                                    <span className="flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
-                                        <Wifi size={12} />
-                                        LIVE
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-1.5 bg-slate-100 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">
-                                        Connecting...
-                                    </span>
-                                )}
-                                {liveAlerts.length > 0 && (
-                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">
-                                        {liveAlerts.length} Active
-                                    </span>
-                                )}
+                <div className="mt-auto space-y-4">
+                    <div className="p-5 glass-premium rounded-[1.5rem] border border-slate-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-[10px]">
+                                {user?.displayName?.[0] || 'A'}
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[10px] font-black text-slate-900 uppercase truncate">{user?.displayName}</div>
+                                <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">Administrator</div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="p-5 space-y-4 overflow-y-auto flex-grow">
-                            {liveAlerts.map(alert => (
-                                <div key={alert.id} className="border-2 border-red-100 bg-red-50/30 rounded-xl p-4 flex items-start justify-between gap-4 animate-in slide-in-from-top duration-300">
-                                    <div className="flex items-start gap-4">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-white flex-shrink-0
-                                            ${alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-500' : alert.severity === 'Medium' ? 'bg-orange-500' : 'bg-yellow-500'}`}>
-                                            {(alert.emergency_type?.[0] || '?').toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-black text-slate-800 capitalize">{alert.emergency_type} Emergency</h3>
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                                <span className={`text-xs px-2 py-0.5 rounded font-bold ${alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                                                    }`}>{alert.severity} SEVERITY</span>
-                                                {alert.ambulanceUnit && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">Unit: {alert.ambulanceUnit}</span>}
-                                                {alert.patientName && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Patient: {alert.patientName}</span>}
-                                            </div>
-                                            {alert.reasoning && <p className="text-xs text-slate-500 mt-2 italic max-w-sm">{alert.reasoning}</p>}
-                                            {alert.risk_flags?.length > 0 && (
-                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                    {alert.risk_flags.map((flag: string) => (
-                                                        <span key={flag} className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase">{flag.replace(/_/g, ' ')}</span>
-                                                    ))}
+                    <button
+                        onClick={() => logout()}
+                        className="w-full p-5 rounded-[1.5rem] border border-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest shadow-lg shadow-red-500/5">
+                        <LogOut size={18} />
+                        Terminate Session
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Header */}
+            <header className="lg:hidden fixed top-0 left-0 right-0 glass-premium border-b border-slate-200/50 px-6 py-4 flex items-center justify-between z-[100]">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-blue-400 shadow-lg">
+                        <Activity size={22} />
+                    </div>
+                    <span className="font-black text-xl text-slate-900 tracking-tighter">RRIE</span>
+                </div>
+                <button onClick={() => logout()} className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center border border-red-100">
+                    <LogOut size={18} />
+                </button>
+            </header>
+
+            <main className="flex-1 lg:ml-80 p-6 lg:p-12 pb-32 lg:pb-12 mt-16 lg:mt-0">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-12">
+                    <div>
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">{hospitalData ? hospitalData.name : 'Loading...'}</h1>
+                        <div className="flex items-center gap-4">
+                            <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black border uppercase tracking-widest flex items-center gap-2 
+                                ${hospitalData?.status === 'active' ? 'bg-teal-50 border-teal-200 text-teal-600' :
+                                    hospitalData?.status === 'overloaded' ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-red-50 border-red-200 text-red-600'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full animate-pulse 
+                                    ${hospitalData?.status === 'active' ? 'bg-teal-500' :
+                                        hospitalData?.status === 'overloaded' ? 'bg-orange-500' : 'bg-red-500'}`} />
+                                Facility Status: {hospitalData?.status || 'Offline'}
+                            </div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <Shield size={12} className="text-blue-400" />
+                                Secured Node
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 bg-white/50 p-2 rounded-2xl border border-white/60">
+                        <div className="glass-premium px-5 py-3 rounded-xl border border-white shadow-sm flex flex-col items-center">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Beds</span>
+                            <span className="text-xl font-black text-slate-900">{beds.icu + beds.er}</span>
+                        </div>
+                        <div className="glass-premium px-5 py-3 rounded-xl border border-white shadow-sm flex flex-col items-center">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Live Alerts</span>
+                            <span className="text-xl font-black text-red-600">{liveAlerts.length}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    {/* Left Panel: Facility Controls */}
+                    <div className="lg:col-span-4 space-y-8">
+                        <section className="glass-premium rounded-[2.5rem] border border-white shadow-2xl p-8 md:p-10 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 blur-3xl -z-10 rounded-full group-hover:bg-blue-100/50 transition-colors" />
+
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-900">
+                                    <Bed size={20} />
+                                </div>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Resource Management</h2>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div>
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Availability Shift</div>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {[
+                                            { id: 'active', label: 'Operational', color: 'teal', icon: <Wifi size={14} /> },
+                                            { id: 'overloaded', label: 'Surge Delay', color: 'orange', icon: <AlertCircle size={14} /> },
+                                            { id: 'offline', label: 'Offline', color: 'red', icon: <X size={14} /> }
+                                        ].map(status => (
+                                            <button
+                                                key={status.id}
+                                                onClick={() => {
+                                                    setHospitalData({ ...hospitalData, status: status.id });
+                                                    if (status.id === 'overloaded') setBeds({ icu: 0, er: 0 });
+                                                }}
+                                                className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300 font-black text-xs uppercase tracking-widest
+                                                    ${hospitalData?.status === status.id
+                                                        ? `bg-${status.color}-500 text-white border-${status.color}-500 shadow-xl shadow-${status.color}-500/20 translate-x-1`
+                                                        : 'bg-white text-slate-400 border-slate-50 hover:border-slate-200'}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {status.icon}
+                                                    {status.label}
                                                 </div>
-                                            )}
-                                            <p className="text-[10px] text-slate-400 mt-2">{new Date(alert.timestamp).toLocaleTimeString()}</p>
+                                                {hospitalData?.status === status.id && <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">ICU Capacity</span>
+                                            <span className="text-xl font-black text-blue-600">{beds.icu}<span className="text-slate-200 text-sm ml-1">/ 20</span></span>
+                                        </div>
+                                        <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="absolute top-0 left-0 h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${(beds.icu / 20) * 100}%` }} />
+                                            <input
+                                                type="range" min="0" max="20" value={beds.icu}
+                                                onChange={(e) => setBeds({ ...beds, icu: parseInt(e.target.value) })}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            />
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => setLiveAlerts(prev => prev.filter(a => a.id !== alert.id))}
-                                        className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 mt-1"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            ))}
 
-                            {liveAlerts.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                                    <Activity size={40} className="mb-4 opacity-30" />
-                                    <p className="font-bold text-sm">Monitoring for incoming patients...</p>
-                                    <p className="text-xs mt-1">Alerts will appear here in real time</p>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">ER Capacity</span>
+                                            <span className="text-xl font-black text-teal-600">{beds.er}<span className="text-slate-200 text-sm ml-1">/ 40</span></span>
+                                        </div>
+                                        <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="absolute top-0 left-0 h-full bg-teal-600 rounded-full transition-all duration-500" style={{ width: `${(beds.er / 40) * 100}%` }} />
+                                            <input
+                                                type="range" min="0" max="40" value={beds.er}
+                                                onChange={(e) => setBeds({ ...beds, er: parseInt(e.target.value) })}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        </section>
+
+                        <section className="glass-premium rounded-[2.5rem] border border-white shadow-2xl p-8 md:p-10 relative overflow-hidden group">
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-900">
+                                    <Users size={20} />
+                                </div>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Personnel & Assets</h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Medical Specialists</div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { id: 'neuro', label: 'Neuro', icon: <Activity size={12} /> },
+                                            { id: 'cardio', label: 'Cardio', icon: <Activity size={12} /> },
+                                            { id: 'ortho', label: 'Ortho', icon: <Activity size={12} /> },
+                                            { id: 'peds', label: 'Peds', icon: <Activity size={12} /> }
+                                        ].map(item => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => setStaff(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof prev] }))}
+                                                className={`p-3 rounded-xl border flex items-center gap-2 transition-all font-black text-[10px] uppercase tracking-widest
+                                                    ${staff[item.id as keyof typeof staff]
+                                                        ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
+                                                        : 'bg-white text-slate-400 border-slate-50 hover:border-slate-200'}`}
+                                            >
+                                                {item.icon}
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Diagnostic Assets</div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { id: 'ct', label: 'CT Scan', icon: <ClipboardList size={12} /> },
+                                            { id: 'mri', label: 'MRI', icon: <ClipboardList size={12} /> },
+                                            { id: 'vent', label: 'Ventilator', icon: <Activity size={12} /> },
+                                            { id: 'cath', label: 'Cath Lab', icon: <Settings size={12} /> }
+                                        ].map(item => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => setStaff(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof prev] }))}
+                                                className={`p-3 rounded-xl border flex items-center gap-2 transition-all font-black text-[10px] uppercase tracking-widest
+                                                    ${staff[item.id as keyof typeof staff]
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                                                        : 'bg-white text-slate-400 border-slate-50 hover:border-slate-200'}`}
+                                            >
+                                                {item.icon}
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleUpdate}
+                                    className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-slate-900/40 hover:bg-slate-800 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 mt-6"
+                                >
+                                    <Clipboard />
+                                    Broadcast Updates
+                                </button>
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Right Panel: Incoming Alerts */}
+                    <div className="lg:col-span-8 flex flex-col gap-8">
+                        <section className="glass-premium rounded-[3rem] border border-white shadow-2xl flex-1 flex flex-col overflow-hidden">
+                            <div className="p-8 md:p-10 border-b border-slate-100/50 flex justify-between items-center bg-white/30">
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-tight">
+                                        <Bell size={24} className="text-red-500 animate-bounce" />
+                                        Emergency Referral Feed
+                                    </h2>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 ml-9">Real-time incoming ambulance alerts</p>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all
+                                        ${socketConnected ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-teal-500 animate-pulse' : 'bg-slate-300'}`} />
+                                            {socketConnected ? 'System Live' : 'Reconnecting...'}
+                                        </div>
+                                    </div>
+                                    {liveAlerts.length > 0 && (
+                                        <div className="bg-red-600 text-white text-[10px] font-black px-3 py-2 rounded-xl shadow-lg shadow-red-600/20 animate-pulse">
+                                            {liveAlerts.length} URGENT
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-8 md:p-10 space-y-6 overflow-y-auto flex-grow custom-scrollbar max-h-[800px]">
+                                {liveAlerts.map(alert => (
+                                    <div key={alert.id} className="relative group animate-in slide-in-from-top duration-500">
+                                        <div className={`absolute -inset-0.5 rounded-[2.5rem] bg-gradient-to-r transition-opacity duration-500 opacity-20 -z-10
+                                            ${alert.severity === 'High' || alert.severity === 'Critical' ? 'from-red-600 to-rose-600' : 'from-orange-500 to-amber-500'}`} />
+
+                                        <div className="glass-premium p-6 md:p-8 rounded-[2.5rem] border border-white shadow-xl hover:shadow-2xl transition-all relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-50/20 blur-3xl -z-10 rounded-full" />
+
+                                            <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+                                                <div className="flex items-start gap-6">
+                                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-2xl flex-shrink-0 group-hover:rotate-6 transition-transform
+                                                        ${alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-600 shadow-red-600/20' : alert.severity === 'Medium' ? 'bg-orange-500 shadow-orange-500/20' : 'bg-yellow-500 shadow-yellow-500/20'}`}>
+                                                        {(alert.emergency_type?.[0] || '?').toUpperCase()}
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-1">
+                                                                <h3 className="text-xl font-black text-slate-900 capitalize tracking-tight leading-none">{alert.emergency_type} Emergency</h3>
+                                                                <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border
+                                                                    ${alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-600'}`}>
+                                                                    {alert.severity} Severity
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                                <MapPin size={10} className="text-blue-500" />
+                                                                Inbound Tracking: <span className="text-slate-900">{alert.ambulanceUnit || 'M-DISPATCH'}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {alert.reasoning && (
+                                                            <div className="relative pl-6 py-1">
+                                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-100 rounded-full" />
+                                                                <p className="text-sm text-slate-500 italic leading-relaxed">{alert.reasoning}</p>
+                                                            </div>
+                                                        )}
+
+                                                        {alert.risk_flags?.length > 0 && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {alert.risk_flags.map((flag: string) => (
+                                                                    <div key={flag} className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-tighter">
+                                                                        <AlertCircle size={10} className="text-red-400" />
+                                                                        {flag.replace(/_/g, ' ')}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-row md:flex-col items-center md:items-end gap-3 w-full md:w-auto mt-4 md:mt-0 pt-6 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                                    <div className="flex-1 md:flex-none text-right">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Broadcasted</div>
+                                                        <div className="text-sm font-black text-slate-900 uppercase">{new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setLiveAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                                                        className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 hover:bg-red-50 hover:text-red-600 border border-slate-100 hover:border-red-100 transition-all flex items-center justify-center shrink-0"
+                                                    >
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {liveAlerts.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-40 glass-premium rounded-[2.5rem] border border-dashed border-slate-200">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mb-6 animate-pulse">
+                                            <Activity size={48} />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-center px-10 leading-loose">
+                                            Scanning Secured Network for Inbound Patient Matrix
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-8">
+                                            <Loader2 size={16} className="text-blue-400 animate-spin" />
+                                            <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Surveillance Active</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
                     </div>
                 </div>
             </main>

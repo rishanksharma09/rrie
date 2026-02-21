@@ -77,6 +77,7 @@ export const translations = {
         pendingDispatch: 'Pending Dispatch',
         assigningAmbulance: 'Assigning ambulance...',
         dispatchOfficer: 'Dispatch Officer',
+        waitingForEmergency: 'Waiting for active emergency tracking...',
 
         // Toggle Button
         langToggle: 'हिं',
@@ -160,6 +161,7 @@ export const translations = {
         pendingDispatch: 'डिस्पैच प्रतीक्षित',
         assigningAmbulance: 'एम्बुलेंस असाइन की जा रही है...',
         dispatchOfficer: 'डिस्पैच अधिकारी',
+        waitingForEmergency: 'सक्रिय आपातकालीन ट्रैकिंग की प्रतीक्षा है...',
 
         // Toggle Button
         langToggle: 'EN',

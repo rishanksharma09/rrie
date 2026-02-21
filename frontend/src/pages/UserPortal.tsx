@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboard, Shield, Activity, Truck, AlertTriangle, Tag } from 'lucide-react';
+import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboard, Shield, Activity, Truck, Tag, ArrowRight, Brain, Clock, Plus, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import mapboxgl from 'mapbox-gl';
@@ -432,36 +432,48 @@ const UserPortal = () => {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                {/* Language Toggle on sign-in screen */}
-                <div className="absolute top-4 right-4 z-50 flex gap-2">
-                    <button
-                        onClick={() => setLanguage('en')}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${language === 'en' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}
-                    >
-                        EN
-                    </button>
-                    <button
-                        onClick={() => setLanguage('hi')}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-all ${language === 'hi' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}
-                    >
-                        हिं
-                    </button>
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none -z-10 text-slate-900/5">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 blur-[120px] rounded-full" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[40%] bg-teal-50/40 blur-[100px] rounded-full" />
                 </div>
-                <div className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-blue-500/10 p-8 border border-slate-100 text-center">
-                    <div className="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+
+                {/* Language Toggle on sign-in screen - Floating Minimal */}
+                <div className="absolute top-6 right-6 z-50">
+                    <div className="glass-premium p-1 rounded-xl flex gap-1 border border-white/40">
+                        <button
+                            onClick={() => setLanguage('en')}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'en' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'}`}
+                        >
+                            EN
+                        </button>
+                        <button
+                            onClick={() => setLanguage('hi')}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'hi' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'}`}
+                        >
+                            हिं
+                        </button>
+                    </div>
+                </div>
+
+                <div className="max-w-md w-full glass-premium rounded-[2.5rem] p-10 border border-white shadow-2xl text-center">
+                    <div className="w-20 h-20 bg-slate-900 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-slate-900/20 rotate-3">
                         <Shield size={40} />
                     </div>
-                    <h1 className="text-3xl font-black text-slate-900 mb-2">{t.userPortalTitle}</h1>
-                    <p className="text-slate-500 mb-8">{t.signInPrompt}</p>
+                    <h1 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">{t.userPortalTitle}</h1>
+                    <p className="text-slate-500 font-medium mb-10 leading-relaxed px-4">{t.signInPrompt}</p>
+
                     <button
                         onClick={login}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-3"
+                        className="group relative w-full bg-slate-900 text-white font-bold py-5 rounded-2xl shadow-2xl shadow-slate-900/20 transition-all flex items-center justify-center gap-4 active:scale-95 overflow-hidden"
                     >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
                         {t.signInGoogle}
                     </button>
-                    <Link to="/" className="mt-6 inline-block text-slate-400 hover:text-slate-600 text-sm font-medium transition-colors">
+
+                    <Link to="/" className="mt-8 inline-flex items-center gap-2 text-slate-400 hover:text-slate-900 text-sm font-black uppercase tracking-widest transition-all">
+                        <ArrowRight size={14} className="rotate-180" />
                         {t.backToHome}
                     </Link>
                 </div>
@@ -470,84 +482,88 @@ const UserPortal = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row">
-            {/* Sidebar - Desktop Only */}
-            <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col py-8 px-4 fixed h-full z-20">
-                <div className="flex items-center gap-3 px-4 mb-10">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <Activity size={24} />
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
+            {/* Sidebar - Desktop Only (Glass Premium) */}
+            <aside className="hidden md:flex w-72 bg-white/40 backdrop-blur-3xl border-r border-slate-200/50 flex-col py-10 px-6 fixed h-full z-[100]">
+                <div className="flex items-center gap-4 px-2 mb-12">
+                    <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 shadow-xl shadow-slate-900/20">
+                        <Activity size={28} />
                     </div>
-                    <span className="font-black text-xl text-slate-900 tracking-tight">RRIE</span>
+                    <span className="font-black text-2xl text-slate-900 tracking-tighter uppercase">RRIE</span>
                 </div>
 
-                <div className="space-y-2 flex-1">
+                <div className="space-y-3 flex-1">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-2">Navigation</div>
+
                     <button
                         onClick={() => setActiveTab('analyze')}
-                        className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${activeTab === 'analyze'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                        className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all group ${activeTab === 'analyze'
+                            ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20'
+                            : 'text-slate-500 hover:bg-slate-200/50 hover:text-slate-900'
                             }`}
                     >
-                        <LayoutDashboard size={22} />
-                        <span className="font-bold">{t.analyzeSymptoms}</span>
+                        <LayoutDashboard size={22} className={activeTab === 'analyze' ? 'text-blue-400' : 'group-hover:text-blue-600'} />
+                        <span className="font-bold text-sm uppercase tracking-widest">{t.analyzeSymptoms}</span>
                     </button>
 
                     <button
                         onClick={() => setActiveTab('bookings')}
-                        className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${activeTab === 'bookings'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                        className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all group ${activeTab === 'bookings'
+                            ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20'
+                            : 'text-slate-500 hover:bg-slate-200/50 hover:text-slate-900'
                             }`}
                     >
-                        <MapIcon size={22} />
-                        <span className="font-bold">{t.ambulanceTracking}</span>
+                        <MapIcon size={22} className={activeTab === 'bookings' ? 'text-blue-400' : 'group-hover:text-blue-600'} />
+                        <span className="font-bold text-sm uppercase tracking-widest">{t.ambulanceTracking}</span>
                     </button>
                 </div>
 
-                <div className="flex gap-2 py-4 px-1">
-                    <button
-                        onClick={() => setLanguage('en')}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${language === 'en' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-300'}`}
-                    >
-                        EN
-                    </button>
-                    <button
-                        onClick={() => setLanguage('hi')}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${language === 'hi' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-300'}`}
-                    >
-                        हिं
-                    </button>
-                </div>
+                <div className="pt-8 border-t border-slate-200/50">
+                    <div className="glass-premium p-1 rounded-xl flex gap-1 border border-slate-200/50 mb-6">
+                        <button
+                            onClick={() => setLanguage('en')}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'en' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'}`}
+                        >
+                            EN
+                        </button>
+                        <button
+                            onClick={() => setLanguage('hi')}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'hi' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500'}`}
+                        >
+                            हिं
+                        </button>
+                    </div>
 
-                <div className="pt-4 border-t border-slate-100">
                     <button
                         onClick={logout}
-                        className="w-full p-3 rounded-2xl flex items-center gap-3 text-red-500 hover:bg-red-50 transition-all font-bold"
+                        className="w-full p-4 rounded-2xl flex items-center gap-4 text-red-600 hover:bg-red-50/50 transition-all font-bold text-sm uppercase tracking-widest group"
                     >
-                        <LogOut size={22} />
+                        <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                            <LogOut size={20} />
+                        </div>
                         <span>{t.logout}</span>
                     </button>
                 </div>
             </aside>
 
-            {/* Mobile Header */}
-            <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                        <Activity size={18} />
+            {/* Mobile Header - Sticky Minimal Glass */}
+            <header className="md:hidden glass-premium border-b border-slate-200/50 px-6 py-4 flex items-center justify-between sticky top-0 z-[100]">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-blue-400 shadow-lg">
+                        <Activity size={22} />
                     </div>
-                    <span className="font-black text-xl text-slate-900 tracking-tight">RRIE</span>
+                    <span className="font-black text-xl text-slate-900 tracking-tighter">RRIE</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="glass-premium p-0.5 rounded-lg flex gap-0.5 border border-slate-200/50 scale-90">
                     <button
                         onClick={() => setLanguage('en')}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${language === 'en' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${language === 'en' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}
                     >
                         EN
                     </button>
                     <button
                         onClick={() => setLanguage('hi')}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all ${language === 'hi' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${language === 'hi' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}
                     >
                         हिं
                     </button>
@@ -557,58 +573,77 @@ const UserPortal = () => {
             {/* Main Content */}
             <main className="flex-1 md:ml-64 p-4 md:p-10 mb-24 md:mb-0 overflow-x-hidden">
                 {activeTab === 'analyze' ? (
-                    <div className="max-w-3xl mx-auto space-y-8">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-3xl font-black text-slate-900">{t.emergencyTriage}</h2>
-                                <p className="text-slate-500 font-medium">{t.triageSubtitle}</p>
+                    <div className="max-w-4xl mx-auto space-y-12">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-200/50">
+                            <div className="space-y-1">
+                                <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t.emergencyTriage}</h2>
+                                <p className="text-slate-500 font-medium text-lg">{t.triageSubtitle}</p>
+                            </div>
+                            <div className="hidden lg:flex items-center gap-3 bg-blue-50/50 px-4 py-2 rounded-2xl border border-blue-100">
+                                <Brain size={18} className="text-blue-600" />
+                                <span className="text-[10px] font-black text-blue-900 uppercase tracking-widest">Medical Intelligence Active</span>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                            <div className="p-6 md:p-10 space-y-6 md:y-8">
+                        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 blur-3xl -z-10 rounded-full" />
+                            <div className="p-8 md:p-12 space-y-10">
                                 <div>
-                                    <label className="block text-[10px] md:text-sm font-black text-slate-400 uppercase tracking-widest mb-4">{t.symptomsLabel}</label>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                                        {t.symptomsLabel}
+                                    </label>
                                     <div className="relative group">
                                         <textarea
-                                            className="w-full h-40 md:h-48 p-5 md:p-6 rounded-2xl md:rounded-3xl border-2 border-slate-50 bg-slate-50 focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-slate-700 text-base md:text-lg leading-relaxed shadow-inner"
+                                            className="w-full h-48 md:h-56 p-6 md:p-10 rounded-[2rem] border-2 border-slate-50 bg-slate-50 focus:bg-white focus:border-slate-900/5 focus:ring-[15px] focus:ring-slate-900/[0.02] transition-all duration-500 outline-none text-slate-800 text-lg md:text-xl font-medium leading-relaxed shadow-inner"
                                             placeholder={t.symptomsPlaceholder}
                                             value={symptoms}
                                             onChange={(e) => setSymptoms(e.target.value)}
                                         />
                                         <button
                                             onClick={toggleRecording}
-                                            className={`absolute bottom-4 right-4 md:bottom-6 md:right-6 p-3 md:p-4 rounded-xl md:rounded-2xl shadow-xl transition-all ${isRecording
-                                                ? 'bg-red-500 text-white animate-pulse shadow-red-500/30'
-                                                : 'bg-white text-slate-400 hover:text-blue-600 hover:shadow-blue-500/10'
+                                            className={`absolute bottom-6 right-6 md:bottom-10 md:right-10 p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl transition-all duration-300 group/mic ${isRecording
+                                                ? 'bg-red-500 text-white animate-pulse shadow-red-500/40 translate-y-[-4px]'
+                                                : 'bg-slate-900 text-blue-400 hover:bg-slate-800 hover:shadow-slate-900/30 hover:translate-y-[-4px]'
                                                 }`}
                                         >
-                                            {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                                            {isRecording ? <StopCircle size={24} /> : <Mic size={24} />}
+                                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover/mic:opacity-100 transition-opacity pointer-events-none whitespace-nowrap uppercase tracking-widest shadow-xl">
+                                                {isRecording ? 'Stop Recording' : 'Voice Input'}
+                                            </div>
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                    <div className="space-y-3 md:space-y-4">
-                                        <label className="block text-[10px] md:text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <MapPin size={12} /> {t.yourLocation}
-                                        </label>
-                                        <div className="p-4 md:p-5 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 text-slate-600 font-bold text-xs md:text-sm shadow-inner truncate">
-                                            {locationText || t.detectingLocation}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <MapPin size={12} className="text-blue-600" /> {t.yourLocation}
+                                            </label>
+                                            <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Live GPS</span>
+                                        </div>
+                                        <div className="p-5 md:p-6 bg-slate-50 rounded-2xl md:rounded-[1.5rem] border border-slate-100 text-slate-700 font-bold text-sm md:text-base shadow-inner flex items-center gap-4 group hover:bg-white hover:border-blue-100 transition-all duration-300">
+                                            <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                                            <span className="truncate flex-1">{locationText || t.detectingLocation}</span>
                                         </div>
                                     </div>
-                                    <div className="space-y-3 md:space-y-4">
-                                        <label className="block text-[10px] md:text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            {t.ambulancePriority}
+                                    <div className="space-y-4">
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <Truck size={12} className="text-red-600" /> {t.ambulancePriority}
                                         </label>
-                                        <div className="flex items-center gap-3 bg-red-50 p-4 md:p-5 rounded-xl md:rounded-2xl border border-red-100 transition-all hover:bg-red-100/50 cursor-pointer" onClick={() => setWantAmbulance(!wantAmbulance)}>
-                                            <input
-                                                type="checkbox"
-                                                checked={wantAmbulance}
-                                                onChange={(e) => setWantAmbulance(e.target.checked)}
-                                                className="w-5 h-5 text-red-600 border-red-200 rounded focus:ring-red-500"
-                                            />
-                                            <span className="text-xs md:text-sm font-black text-red-900 leading-tight">{t.needAmbulance}</span>
+                                        <div
+                                            className={`group relative flex items-center gap-4 p-5 md:p-6 rounded-2xl md:rounded-[1.5rem] border-2 transition-all duration-300 cursor-pointer overflow-hidden
+                                            ${wantAmbulance
+                                                    ? 'bg-red-50/50 border-red-500/30 shadow-lg shadow-red-500/5'
+                                                    : 'bg-slate-50 border-slate-50 hover:bg-white hover:border-slate-200'}`}
+                                            onClick={() => setWantAmbulance(!wantAmbulance)}
+                                        >
+                                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${wantAmbulance ? 'bg-red-500 border-red-500' : 'border-slate-300 group-hover:border-slate-900'}`}>
+                                                {wantAmbulance && <Plus size={16} className="text-white rotate-45" />}
+                                            </div>
+                                            <span className={`text-sm md:text-base font-black uppercase tracking-widest leading-tight transition-colors ${wantAmbulance ? 'text-red-900' : 'text-slate-500 group-hover:text-slate-900'}`}>{t.needAmbulance}</span>
+                                            {wantAmbulance && <div className="absolute right-0 top-0 bottom-0 w-1 bg-red-500" />}
                                         </div>
                                     </div>
                                 </div>
@@ -616,70 +651,82 @@ const UserPortal = () => {
                                 <button
                                     onClick={handleAnalyze}
                                     disabled={isAnalyzing || !symptoms}
-                                    className={`w-full py-5 md:py-6 rounded-2xl md:rounded-[2rem] font-black text-lg md:text-xl transition-all flex items-center justify-center gap-3 md:gap-4 shadow-2xl
+                                    className={`group relative w-full py-6 md:py-8 rounded-[2rem] font-black text-xl md:text-2xl transition-all duration-300 flex items-center justify-center gap-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden
                                         ${isAnalyzing || !symptoms
-                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/30 hover:scale-[1.02] active:scale-[0.98]'}`}
+                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none'
+                                            : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-slate-900/20 hover:translate-y-[-4px] active:translate-y-0'}`}
                                 >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-white/10 to-blue-600/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                     {isAnalyzing ? (
                                         <>
-                                            <Loader2 className="animate-spin" size={22} />
+                                            <Loader2 className="animate-spin text-blue-400" size={28} />
                                             {t.analyzingEmergency}
                                         </>
                                     ) : (
                                         <>
-                                            <Activity size={22} />
+                                            <Brain size={28} className="text-blue-400 group-hover:rotate-12 transition-transform" />
                                             {t.analyzeSymptomBtn}
+                                            <ArrowRight size={24} className="opacity-50 group-hover:translate-x-2 transition-transform" />
                                         </>
                                     )}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Result Section */}
+                        {/* Result Section - Premium Dashboard Feel */}
                         {result && (
-                            <div className="animate-fade-in-up pb-20">
-                                <div className="bg-white rounded-[2.5rem] shadow-2xl border border-blue-100/50 overflow-hidden">
-                                    <div className="bg-green-50/50 px-10 py-6 border-b border-green-100/50 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center">
-                                                <Shield size={24} />
+                            <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-20">
+                                <div className="glass-premium rounded-[3rem] border border-white shadow-2xl overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50/30 blur-[100px] -z-10 rounded-full" />
+                                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50/20 blur-[80px] -z-10 rounded-full" />
+
+                                    <div className="bg-slate-900 px-8 md:px-12 py-8 flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-14 h-14 bg-blue-400/10 text-blue-400 rounded-2xl flex items-center justify-center border border-blue-400/20">
+                                                <Shield size={28} />
                                             </div>
                                             <div>
-                                                <h3 className="font-black text-green-900 text-xl tracking-tight">{t.referralActive}</h3>
-                                                <p className="text-xs text-green-600 font-bold uppercase tracking-widest">{t.confidenceScore}: {result.confidence}</p>
+                                                <h3 className="font-black text-white text-2xl tracking-tight uppercase">{t.referralActive}</h3>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] text-blue-400 font-black uppercase tracking-[0.2em]">{t.confidenceScore}</span>
+                                                    <div className="h-1 w-24 bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-blue-400 rounded-full" style={{ width: result.confidence }} />
+                                                    </div>
+                                                    <span className="text-xs text-white font-black">{result.confidence}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="p-10 space-y-10">
-                                        <section>
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">{t.diagnosisReasoning}</div>
-                                            <p className="text-xl font-bold text-slate-800 leading-relaxed italic border-l-4 border-blue-500 pl-6 bg-blue-50/30 py-4 rounded-r-2xl">
-                                                "{result.reasoning}"
+                                    <div className="p-8 md:p-12 space-y-12">
+                                        <section className="relative">
+                                            <div className="absolute -left-6 top-0 bottom-0 w-1.5 bg-blue-600 rounded-full" />
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">{t.diagnosisReasoning}</label>
+                                            <p className="text-xl md:text-2xl font-bold text-slate-900 leading-[1.6] tracking-tight">
+                                                {result.reasoning}
                                             </p>
                                         </section>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <section>
-                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">{t.severityLabel}</div>
-                                                <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-lg border-2 shadow-sm ${result.priority.toLowerCase() === 'high' ? 'bg-red-50 border-red-200 text-red-600' :
-                                                        result.priority.toLowerCase() === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-600' :
-                                                            'bg-green-50 border-green-200 text-green-600'
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <section className="space-y-4">
+                                                <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t.severityLabel}</label>
+                                                <div className={`inline-flex items-center gap-3 px-8 py-4 rounded-[1.5rem] font-black text-xl border-2 shadow-2xl transition-all hover:scale-105 duration-300 ${result.priority.toLowerCase() === 'high' ? 'bg-red-50 border-red-200 text-red-600 shadow-red-500/5' :
+                                                    result.priority.toLowerCase() === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-600 shadow-amber-500/5' :
+                                                        'bg-teal-50 border-teal-200 text-teal-600 shadow-teal-500/5'
                                                     }`}>
-                                                    <AlertTriangle size={20} />
+                                                    <div className={`w-3 h-3 rounded-full animate-pulse ${result.priority.toLowerCase() === 'high' ? 'bg-red-600' : result.priority.toLowerCase() === 'medium' ? 'bg-amber-600' : 'bg-teal-600'}`} />
                                                     {result.priority.toUpperCase()}
                                                 </div>
                                             </section>
 
                                             {result.risk_flags && result.risk_flags.length > 0 && (
-                                                <section>
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">{t.riskFlagsLabel}</div>
-                                                    <div className="flex flex-wrap gap-2">
+                                                <section className="space-y-4">
+                                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t.riskFlagsLabel}</label>
+                                                    <div className="flex flex-wrap gap-3">
                                                         {result.risk_flags.map((flag, idx) => (
-                                                            <div key={idx} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-black border border-slate-200 flex items-center gap-1.5 hover:bg-slate-200 transition-colors cursor-default">
-                                                                <Tag size={12} className="text-slate-400" />
-                                                                {flag.replace(/_/g, ' ').toUpperCase()}
+                                                            <div key={idx} className="bg-slate-50 text-slate-900 px-5 py-2.5 rounded-xl text-[10px] font-black border border-slate-200/50 flex items-center gap-2 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all cursor-default shadow-sm uppercase tracking-widest">
+                                                                <Tag size={12} className="opacity-50" />
+                                                                {flag.replace(/_/g, ' ')}
                                                             </div>
                                                         ))}
                                                     </div>
@@ -687,85 +734,125 @@ const UserPortal = () => {
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                                            <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
-                                                <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-4">{t.assignedHospital}</div>
-                                                <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2">
-                                                    <h4 className="text-2xl font-black text-slate-900">{result.hospital}</h4>
-                                                    <div className="text-[10px] font-black text-blue-600 tracking-tighter bg-white px-2 py-1 rounded-lg border border-blue-100 shadow-sm">
-                                                        {t.matchScore}: {result.hospitalScore}
-                                                    </div>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-8 border-t border-slate-100">
+                                            <div className="bg-slate-50 p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-inner relative group hover:bg-white transition-all duration-500">
+                                                <div className="absolute top-6 right-6 flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
+                                                    <Brain size={14} className="text-blue-600" />
+                                                    <span className="text-[10px] font-black text-blue-900 uppercase tracking-tighter">AI Rec: {result.hospitalScore}%</span>
                                                 </div>
-                                                <p className="text-sm text-slate-500 font-medium mb-6">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <MapPin size={12} className="text-slate-300" />
-                                                        {result.distance ? `${result.distance} km • ` : ''}{result.hospitalAddress}
-                                                    </span>
+
+                                                <label className="block text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6">{t.assignedHospital}</label>
+
+                                                <h4 className="text-3xl font-black text-slate-900 mb-2 leading-tight tracking-tight">{result.hospital}</h4>
+                                                <p className="text-slate-500 font-bold mb-8 flex items-center gap-2 text-sm">
+                                                    <MapPin size={16} className="text-blue-400" />
+                                                    {result.distance ? <span className="text-slate-900">{result.distance} km</span> : ''}
+                                                    <span className="opacity-50">•</span>
+                                                    <span className="truncate">{result.hospitalAddress}</span>
                                                 </p>
-                                                <div className="flex flex-col gap-3">
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     {result.hospitalContact && (
-                                                        <a href={`tel:${result.hospitalContact}`} className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">
-                                                            {t.callHospital}
+                                                        <a href={`tel:${result.hospitalContact}`} className="flex items-center justify-center gap-3 bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold text-sm shadow-xl shadow-slate-900/10 hover:bg-slate-800 hover:-translate-y-1 transition-all">
+                                                            📞 {t.callHospital}
                                                         </a>
                                                     )}
                                                     {result.hospitalId && (
                                                         <button
                                                             onClick={handlePreAlert}
                                                             disabled={hospitalAlertSent || sendingAlert}
-                                                            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-2 ${hospitalAlertSent
-                                                                ? 'bg-green-50 border-green-300 text-green-700 cursor-default'
-                                                                : sendingAlert
-                                                                    ? 'bg-orange-50 border-orange-200 text-orange-600 animate-pulse cursor-wait'
-                                                                    : 'bg-yellow-50 border-yellow-300 text-yellow-800 hover:bg-yellow-100 hover:border-yellow-400 hover:shadow-lg'
+                                                            className={`relative group/btn flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm transition-all border-2 overflow-hidden
+                                                            ${hospitalAlertSent
+                                                                    ? 'bg-teal-50 border-teal-300 text-teal-700'
+                                                                    : sendingAlert
+                                                                        ? 'bg-orange-50 border-orange-200 text-orange-600 animate-pulse'
+                                                                        : 'bg-white border-slate-900/10 text-slate-900 hover:border-slate-900 hover:-translate-y-1 shadow-sm'
                                                                 }`}
                                                         >
-                                                            {hospitalAlertSent ? t.hospitalNotified : sendingAlert ? t.sending : t.preAlertHospital}
+                                                            {hospitalAlertSent ? (
+                                                                <>
+                                                                    <div className="w-2 h-2 bg-teal-500 rounded-full" />
+                                                                    {t.hospitalNotified}
+                                                                </>
+                                                            ) : sendingAlert ? (
+                                                                t.sending
+                                                            ) : (
+                                                                <>
+                                                                    <div className="absolute inset-0 bg-slate-900 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
+                                                                    <span className="relative z-10 group-hover/btn:text-white transition-colors uppercase tracking-widest text-[10px]">{t.preAlertHospital}</span>
+                                                                </>
+                                                            )}
                                                         </button>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            <div className={`p-8 rounded-[2rem] border-2 flex flex-col justify-center ${(!result.ambulance || result.status === 'Pending') ? 'border-dashed border-slate-200 bg-white' : 'border-red-100 bg-red-50/30'}`}>
-                                                <div className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-4">{t.transportStatus}</div>
-                                                <h4 className="text-2xl font-black text-slate-900 mb-2">
+                                            <div className={`p-8 md:p-10 rounded-[2.5rem] border shadow-2xl flex flex-col items-center justify-center text-center transition-all duration-500 hover:scale-[1.02]
+                                                ${(!result.ambulance || result.status === 'Pending')
+                                                    ? 'bg-slate-900 border-slate-900 shadow-slate-900/20'
+                                                    : 'bg-red-600 border-red-600 shadow-red-500/20'}`}>
+
+                                                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl ${(!result.ambulance || result.status === 'Pending') ? 'bg-white/10 text-blue-400' : 'bg-white/10 text-white'}`}>
+                                                    <Truck size={32} />
+                                                </div>
+
+                                                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-4">{t.transportStatus}</label>
+
+                                                <h4 className="text-3xl font-black text-white mb-2 tracking-tight">
                                                     {result.status === 'Pending' ? t.assigningAmbulance : result.ambulance}
                                                 </h4>
+
                                                 {result.status !== 'Pending' && (
-                                                    <div className="text-lg font-bold text-red-600">{t.eta}: {result.eta}</div>
+                                                    <div className="inline-flex items-center gap-3 bg-black/20 text-white px-8 py-3 rounded-2xl font-black text-2xl mt-4">
+                                                        <Clock size={24} className="opacity-50" />
+                                                        {result.eta}
+                                                    </div>
+                                                )}
+
+                                                {result.status === 'Pending' && (
+                                                    <div className="flex gap-1 mt-6">
+                                                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+                                                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* Nearby Options */}
+                                        {/* Nearby Options - Bento Style */}
                                         {result.alternatives && result.alternatives.length > 0 && (
-                                            <section className="pt-10 border-t border-slate-100">
-                                                <div className="flex items-center gap-2 mb-8">
-                                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t.secondaryFacilities}</h4>
+                                            <section className="pt-12 border-t border-slate-100">
+                                                <div className="flex items-center gap-6 mb-10">
+                                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap">{t.secondaryFacilities}</h4>
                                                     <div className="h-[1px] flex-1 bg-slate-100"></div>
                                                 </div>
 
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     {result.alternatives.map((alt: any, idx: number) => (
-                                                        <div key={idx} className="group relative bg-white p-6 hover:bg-slate-50 rounded-3xl transition-all border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5">
-                                                            <div className="flex items-start justify-between gap-4">
-                                                                <div className="flex-1">
-                                                                    <div className="font-bold text-slate-900 text-lg mb-1">{alt.name}</div>
-                                                                    <div className="flex flex-col gap-2 text-xs text-slate-500 font-medium">
-                                                                        <span className="flex items-center gap-1.5">
+                                                        <div key={idx} className="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 hover:border-slate-900/5 hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 overflow-hidden">
+                                                            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/50 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                                            <div className="flex items-start justify-between gap-6 relative z-10">
+                                                                <div className="space-y-4 flex-1">
+                                                                    <div className="space-y-1">
+                                                                        <div className="font-black text-slate-900 text-xl tracking-tight group-hover:text-blue-600 transition-colors uppercase">{alt.name}</div>
+                                                                        <div className="flex items-center gap-2">
                                                                             <MapPin size={12} className="text-slate-300" />
-                                                                            {alt.distance} km • {alt.location?.address || alt.address}
-                                                                        </span>
-                                                                        {(alt.contact || alt.contactNumber) && (
-                                                                            <a href={`tel:${alt.contact || alt.contactNumber}`} className="flex items-center gap-1.5 text-blue-600 hover:underline">
-                                                                                <span className="text-slate-300 pointer-events-none text-[10px] w-3 flex justify-center">📞</span>
-                                                                                {alt.contact || alt.contactNumber}
-                                                                            </a>
-                                                                        )}
+                                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{alt.distance} km • {alt.location?.address || alt.address}</span>
+                                                                        </div>
                                                                     </div>
+
+                                                                    {(alt.contact || alt.contactNumber) && (
+                                                                        <a href={`tel:${alt.contact || alt.contactNumber}`} className="inline-flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] bg-slate-100 px-4 py-2 rounded-xl group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                                                            📞 {alt.contact || alt.contactNumber}
+                                                                        </a>
+                                                                    )}
                                                                 </div>
-                                                                <div className="flex flex-col items-end gap-2">
-                                                                    <div className="text-[10px] font-black text-blue-600 tracking-tighter bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">{t.matchScore}: {alt.score}</div>
-                                                                    <div className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-lg ${alt.status === 'active' || alt.status === 'Active' ? 'bg-green-50 text-green-500' : 'bg-orange-50 text-orange-500'}`}>
+                                                                <div className="flex flex-col items-end gap-3 text-right">
+                                                                    <div className="text-[10px] font-black text-blue-600 tracking-tighter bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all uppercase">
+                                                                        Match: {alt.score}%
+                                                                    </div>
+                                                                    <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${alt.status?.toLowerCase() === 'active' ? 'bg-teal-50 border-teal-100 text-teal-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
                                                                         {alt.status || 'Active'}
                                                                     </div>
                                                                 </div>
@@ -781,69 +868,119 @@ const UserPortal = () => {
                         )}
                     </div>
                 ) : (
-                    <div className="max-w-4xl mx-auto space-y-8">
-                        <div>
-                            <h2 className="text-3xl font-black text-slate-900">{t.liveTracking}</h2>
-                            <p className="text-slate-500 font-medium">{t.liveTrackingSubtitle}</p>
+                    <div className="max-w-7xl mx-auto space-y-10">
+                        <div className="pb-4 border-b border-slate-200/50">
+                            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t.liveTracking}</h2>
+                            <p className="text-slate-500 font-medium text-lg">{t.liveTrackingSubtitle}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-auto lg:h-[600px]">
-                            <div className="order-2 lg:order-1 lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[500px] lg:max-h-full">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 h-auto lg:h-[700px]">
+                            <div className="lg:col-span-4 space-y-6 overflow-y-auto pr-4 custom-scrollbar max-h-[500px] lg:max-h-full">
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2 px-2">Active Emergency Requests</div>
                                 {isLoadingBookings ? (
-                                    <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={40} /></div>
+                                    <div className="flex flex-col items-center justify-center py-20 glass-premium rounded-[2rem]">
+                                        <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Live Data...</span>
+                                    </div>
                                 ) : bookings.length === 0 ? (
-                                    <div className="bg-white p-10 rounded-3xl border border-dashed border-slate-200 text-center">
-                                        <MapIcon className="mx-auto text-slate-200 mb-4" size={48} />
-                                        <p className="text-slate-400 font-bold">{t.noBookings}</p>
+                                    <div className="glass-premium p-12 rounded-[2.5rem] border border-dashed border-slate-200 text-center">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-slate-200">
+                                            <MapIcon size={48} />
+                                        </div>
+                                        <p className="text-slate-400 font-black uppercase tracking-widest text-xs leading-relaxed px-6">{t.noBookings}</p>
                                     </div>
                                 ) : (
                                     bookings.map((booking) => (
-                                        <div key={booking._id} className="bg-white p-6 rounded-3xl border-2 border-transparent hover:border-blue-500/30 transition-all cursor-pointer shadow-lg shadow-slate-200/50 group">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-600' :
-                                                    booking.status === 'Dispatched' ? 'bg-red-100 text-red-600' :
-                                                        'bg-green-100 text-green-600'}`}>
-                                                    {booking.status === 'Pending' ? t.assigningAmbulance : booking.status}
-                                                </span>
-                                                <span className="text-[10px] text-slate-400 font-bold">{new Date(booking.createdAt).toLocaleTimeString()}</span>
-                                            </div>
-                                            <h4 className="font-black text-slate-900 mb-1 group-hover:text-blue-600 transition-colors uppercase text-sm tracking-tight">{booking.assignedHospital?.name || t.emergencyCenter}</h4>
-                                            <p className="text-xs text-slate-500 font-bold mb-4">{booking.assignedAmbulance?.vehicleNumber || t.assigningAmbulance}</p>
-                                            {booking.status !== 'Pending' && (
-                                                <div className="flex gap-2">
-                                                    <div className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1.5 rounded-lg border border-blue-100 flex-1 text-center">{t.eta}: {booking.assignedAmbulance?.eta || t.calculating}</div>
+                                        <div key={booking._id} className="relative group">
+                                            <div className={`absolute -inset-0.5 rounded-[2rem] bg-gradient-to-r transition-opacity duration-500 opacity-0 group-hover:opacity-100 -z-10
+                                                ${booking.status === 'Pending' ? 'from-yellow-400/20 to-orange-400/20' :
+                                                    booking.status === 'Dispatched' ? 'from-red-400/20 to-rose-400/20' :
+                                                        'from-teal-400/20 to-blue-400/20'}`} />
+
+                                            <div className="glass-premium p-6 rounded-[2rem] border border-white hover:border-transparent transition-all cursor-pointer shadow-xl shadow-slate-200/10 group-active:scale-95">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${booking.status === 'Pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200/50' :
+                                                        booking.status === 'Dispatched' ? 'bg-red-50 text-red-600 border-red-200/50' :
+                                                            'bg-teal-50 text-teal-600 border-teal-200/50'}`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${booking.status === 'Pending' ? 'bg-yellow-600' : booking.status === 'Dispatched' ? 'bg-red-600' : 'bg-teal-600'}`} />
+                                                            {booking.status === 'Pending' ? t.assigningAmbulance : booking.status}
+                                                        </div>
+                                                    </span>
+                                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-black uppercase tracking-tighter">
+                                                        <Clock size={10} />
+                                                        {new Date(booking.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
                                                 </div>
-                                            )}
+
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Assigned Facility</div>
+                                                        <h4 className="font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase text-sm tracking-tight leading-tight">{booking.assignedHospital?.name || t.emergencyCenter}</h4>
+                                                    </div>
+
+                                                    <div>
+                                                        <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ambulance Unit</div>
+                                                        <div className={`text-xs font-black p-3 rounded-xl border flex items-center gap-3 transition-all ${booking.status === 'Pending' ? 'bg-slate-50 border-slate-100 text-slate-400 italic' : 'bg-slate-900 border-slate-900 text-white shadow-lg'}`}>
+                                                            <Truck size={14} className={booking.status === 'Pending' ? 'opacity-20' : 'text-blue-400'} />
+                                                            {booking.assignedAmbulance?.vehicleNumber || t.assigningAmbulance}
+                                                        </div>
+                                                    </div>
+
+                                                    {booking.status !== 'Pending' && (
+                                                        <div className="flex gap-2 pt-2">
+                                                            <div className="bg-blue-50/50 text-blue-600 text-[10px] font-black px-4 py-2 rounded-xl border border-blue-100 flex-1 text-center shadow-sm uppercase tracking-widest">
+                                                                {t.eta}: {booking.assignedAmbulance?.eta || t.calculating}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     ))
                                 )}
                             </div>
 
-                            <div className="order-1 lg:order-2 lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl relative overflow-hidden h-[400px] lg:h-full">
+                            <div className="lg:col-span-8 glass-premium rounded-[3rem] border border-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] relative overflow-hidden h-[500px] lg:h-full">
                                 {bookings.length > 0 ? (
-                                    <div className="w-full h-full relative">
-                                        <div ref={mapContainerRef} className="absolute inset-0 z-0 bg-slate-50" style={{ width: '100%', height: '100%' }} />
-                                        {/* HUD Overlay */}
-                                        {bookings[0]?.assignedAmbulance?.id?.contactNumber && (
-                                            <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 bg-white/90 backdrop-blur-md p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl border border-white/50 flex flex-col sm:flex-row items-center justify-between gap-4 z-10 font-bold overflow-hidden">
-                                                <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto">
-                                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-xl md:rounded-2xl flex items-center justify-center text-red-600 shrink-0">
-                                                        <Truck size={20} />
+                                    <>
+                                        <div ref={mapContainerRef} className="w-full h-full" />
+                                        {/* Premium HUD Overlay */}
+                                        <div className="absolute top-6 left-6 z-10 glass-premium px-5 py-3 rounded-2xl border border-white/40 flex items-center gap-4">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Live Surveillance Active</span>
+                                        </div>
+
+                                        {bookings[0].status !== 'Pending' && bookings[0].assignedAmbulance && (
+                                            <div className="absolute bottom-6 left-6 right-6 md:left-10 md:right-10 glass-premium p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-white/60 flex flex-col sm:flex-row items-center justify-between gap-6 z-10 overflow-hidden group">
+                                                <div className="absolute top-0 left-0 w-2 h-full bg-red-600" />
+                                                <div className="flex items-center gap-6 w-full sm:w-auto">
+                                                    <div className="w-16 h-16 bg-red-50 text-red-600 rounded-[1.5rem] flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                                        <Truck size={32} />
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{t.ambulanceDriver2}</div>
-                                                        <div className="font-black text-slate-900 text-sm md:text-base truncate">{bookings[0].assignedAmbulance.id.driverName || t.dispatchOfficer}</div>
+                                                    <div className="min-w-0 space-y-1">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t.dispatchOfficer}</div>
+                                                        <div className="font-black text-slate-900 text-xl tracking-tight uppercase">{bookings[0].assignedAmbulance?.driverName || 'Emergency Dispatch'}</div>
+                                                        <div className="text-[10px] font-black text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-100 inline-block">Secure Encrypted Link</div>
                                                     </div>
                                                 </div>
-                                                <a href={`tel:${bookings[0].assignedAmbulance.id.contactNumber}`} className="w-full sm:w-auto bg-red-500 text-white px-5 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl font-black text-xs md:text-sm shadow-xl shadow-red-500/30 hover:bg-red-600 transition-all flex items-center justify-center gap-2">
-                                                    {t.contactDriver}
+
+                                                <a
+                                                    href={`tel:${bookings[0].assignedAmbulance?.contactNumber}`}
+                                                    className="w-full sm:w-auto bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black text-sm shadow-2xl shadow-slate-900/40 hover:bg-slate-800 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 group/btn"
+                                                >
+                                                    <Phone size={20} className="group-hover:rotate-12 transition-transform" />
+                                                    <span className="uppercase tracking-widest">{t.contactDriver}</span>
                                                 </a>
                                             </div>
                                         )}
-                                    </div>
+                                    </>
                                 ) : (
-                                    <div className="w-full h-full bg-slate-50 flex items-center justify-center">
-                                        <p className="text-slate-400 font-medium px-6 text-center">{t.selectBooking}</p>
+                                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50">
+                                        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center text-slate-200 shadow-xl mb-6">
+                                            <MapIcon size={48} />
+                                        </div>
+                                        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">{t.waitingForEmergency}</p>
                                     </div>
                                 )}
                             </div>
@@ -853,29 +990,36 @@ const UserPortal = () => {
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex justify-around items-center z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] pb-safe">
+            {/* Mobile Bottom Navigation - Floating Glass */}
+            <nav className="md:hidden fixed bottom-6 left-6 right-6 z-[100] h-20 glass-premium rounded-[2rem] border border-white/60 shadow-2xl flex items-center justify-around px-2">
                 <button
                     onClick={() => setActiveTab('analyze')}
-                    className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'analyze' ? 'text-blue-600' : 'text-slate-400'}`}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 h-[80%] rounded-2xl transition-all duration-300 ${activeTab === 'analyze'
+                        ? 'bg-slate-900 text-blue-400 shadow-xl shadow-slate-900/20 scale-105'
+                        : 'text-slate-400'}`}
                 >
-                    <LayoutDashboard size={20} className={activeTab === 'analyze' ? 'fill-blue-50' : ''} />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{language === 'hi' ? 'ट्राइएज' : 'Triage'}</span>
+                    <LayoutDashboard size={20} className={activeTab === 'analyze' ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t.analyzeSymptoms}</span>
                 </button>
 
                 <button
                     onClick={() => setActiveTab('bookings')}
-                    className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === 'bookings' ? 'text-blue-600' : 'text-slate-400'}`}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 h-[80%] rounded-2xl transition-all duration-300 ${activeTab === 'bookings'
+                        ? 'bg-slate-900 text-blue-400 shadow-xl shadow-slate-900/20 scale-105'
+                        : 'text-slate-400'}`}
                 >
-                    <MapIcon size={20} className={activeTab === 'bookings' ? 'fill-blue-50' : ''} />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{language === 'hi' ? 'ट्रैकिंग' : 'Tracking'}</span>
+                    <MapIcon size={20} className={activeTab === 'bookings' ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t.ambulanceTracking}</span>
                 </button>
+
+                <div className="w-[1px] h-6 bg-slate-200" />
 
                 <button
                     onClick={logout}
-                    className="flex flex-col items-center gap-1 p-2 text-slate-400"
+                    className="flex-1 flex flex-col items-center justify-center gap-1.5 h-[80%] rounded-2xl text-red-400 transition-all active:bg-red-50"
                 >
                     <LogOut size={20} />
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{language === 'hi' ? 'लॉगआउट' : 'Logout'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t.logout}</span>
                 </button>
             </nav>
         </div>
