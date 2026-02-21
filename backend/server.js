@@ -23,12 +23,25 @@ const io = new Server(server, {
     }
 });
 
-// Store for cross-module access
-setIO(io);
+import connectDB from './config/db.js';
 
-// Init socket service
-initSocketService(io);
+const startServer = async () => {
+    try {
+        // 1. Connect to Database FIRST
+        await connectDB();
 
-server.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+        // 2. Start the Server
+        server.listen(PORT, () => {
+            console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+
+            // 3. Initialize Socket.IO after DB is ready
+            setIO(io);
+            initSocketService(io);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

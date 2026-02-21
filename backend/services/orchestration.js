@@ -24,32 +24,32 @@ const deg2rad = (deg) => {
 
 // --- Step 1: Define Clinical Requirements ---
 const getRequirements = (emergencyType) => {
+    const type = (emergencyType || 'default').toLowerCase();
     const reqs = {
-        'Cardiac': {
+        'cardiac': {
             specialists: ['cardiologist'],
             equipment: ['cathLab'],
-            minTraumaLevel: 3 // e.g., lower number is better/higher capability? Or purely feature based. 
-            // Let's stick to explicit capability checks for now.
+            minTraumaLevel: 3
         },
-        'Trauma': {
+        'trauma': {
             specialists: ['orthopedic', 'neurologist'],
             equipment: ['ctScan', 'ventilator'],
             beds: ['icuAvailable']
         },
-        'Respiratory': {
+        'respiratory': {
             equipment: ['ventilator'],
             beds: ['icuAvailable']
         },
-        'Stroke': {
+        'stroke': {
             specialists: ['neurologist'],
             equipment: ['ctScan', 'mri']
         },
-        'Pediatric': {
+        'pediatric': {
             specialists: ['pediatrician']
         },
-        'Default': {}
+        'default': {}
     };
-    return reqs[emergencyType] || reqs['Default'];
+    return reqs[type] || reqs['default'];
 };
 
 // --- Main Orchestration Function ---
@@ -57,9 +57,9 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
     const { emergency_type, severity } = triageData;
 
     // 1. Get Requirements
-    console.log(`[Orchestration] Referral ${referralId} - Step 1: Getting Requirements...`);
+    console.log(`[Orchestration] Referral ${referralId} - Emergency: ${emergency_type}, Severity: ${severity}`);
     const requirements = getRequirements(emergency_type);
-    console.log(`[Orchestration] Requirements for ${emergency_type}:`, JSON.stringify(requirements));
+    console.log(`[Orchestration] Requirements:`, JSON.stringify(requirements));
 
     // 2. Fetch Active Facilities
     const hospitalsRaw = await Hospital.find({ status: { $ne: 'offline' } });
@@ -93,7 +93,18 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
             });
         }
 
+        // Check Beds
+        if (requirements.beds) {
+            requirements.beds.forEach(bedType => {
+                if (!hospital.beds || !hospital.beds[bedType] || hospital.beds[bedType] <= 0) {
+                    capabilityMatch = false;
+                    missingCapabilities.push(bedType);
+                }
+            });
+        }
+
         if (!capabilityMatch) {
+            console.log(`[Orchestration] Hospital ${hospital.name} EXCLUDED. Missing: ${missingCapabilities.join(', ')}`);
             return { id: hospital._id, eligible: false, reason: `Missing: ${missingCapabilities.join(', ')}` };
         }
 
@@ -106,7 +117,11 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         const icuAvailable = hospital.beds.icuAvailable || 0;
         const statusPenalty = hospital.status === 'overloaded' ? 50 : 0;
 
-        let score = 100 - (distance * 2) + (icuAvailable * 5) - statusPenalty;
+        // Formula: Start at 100
+        // - 10 points per km (Very heavy penalty for distance)
+        // + 1 point per ICU bed (Small bonus for capacity)
+        // - 50 points if overloaded
+        let score = 100 - (distance * 10) + (icuAvailable * 1) - statusPenalty;
 
         return {
             id: hospital._id,

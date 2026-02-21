@@ -52,6 +52,7 @@ const UserPortal = () => {
         alternatives?: any[];
         status?: string;
         assignmentId?: string;
+        distance?: number | string;
     }
 
     const [result, setResult] = useState<ReferralResult | null>(null);
@@ -280,6 +281,7 @@ const UserPortal = () => {
                 assignmentId: orch?.assignmentId,
                 risk_flags: data.risk_flags || [],
                 hospitalScore: orch?.hospital?.score || 0,
+                distance: orch?.hospital?.distance,
                 alternatives: orch?.alternatives || []
             });
 
@@ -667,7 +669,12 @@ const UserPortal = () => {
                                                         {t.matchScore}: {result.hospitalScore}
                                                     </div>
                                                 </div>
-                                                <p className="text-sm text-slate-500 font-medium mb-6">{result.hospitalAddress}</p>
+                                                <p className="text-sm text-slate-500 font-medium mb-6">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <MapPin size={12} className="text-slate-300" />
+                                                        {result.distance ? `${result.distance} km • ` : ''}{result.hospitalAddress}
+                                                    </span>
+                                                </p>
                                                 <div className="flex flex-col gap-3">
                                                     {result.hospitalContact && (
                                                         <a href={`tel:${result.hospitalContact}`} className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">

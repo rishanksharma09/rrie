@@ -57,8 +57,6 @@ const hospitalSchema = new mongoose.Schema({
 // For now, removing the 2dsphere index on 'location' as it's no longer a GeoJSON object.
 
 // Index for geospatial queries
-// Index for email queries
-hospitalSchema.index({ email: 1 });
 
 const Hospital = mongoose.model('Hospital', hospitalSchema);
 

@@ -10,7 +10,7 @@ import routes from './routes/index.js';
 dotenv.config();
 
 // Connect to Database
-connectDB();
+// connectDB(); // Moved to server.js for sync startup
 
 const app = express();
 
