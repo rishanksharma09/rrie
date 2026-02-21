@@ -61,8 +61,9 @@ export const translations = {
         transportStatus: 'Transport Status',
         eta: 'ETA',
         secondaryFacilities: 'Secondary Facilities',
-        analysisFailed: 'Failed to analyze symptoms. Please try again.',
         hospitalOffline: 'Hospital portal is not online right now. Try again later.',
+        severityLabel: 'Severity',
+        riskFlagsLabel: 'Risk Flags',
 
         // User Portal - Bookings Tab
         liveTracking: 'Live Ambulance Tracking',
@@ -143,8 +144,9 @@ export const translations = {
         transportStatus: 'परिवहन स्थिति',
         eta: 'अनुमानित समय',
         secondaryFacilities: 'वैकल्पिक सुविधाएं',
-        analysisFailed: 'लक्षण विश्लेषण विफल रहा। कृपया पुनः प्रयास करें।',
         hospitalOffline: 'अस्पताल पोर्टल अभी ऑनलाइन नहीं है। बाद में पुनः प्रयास करें।',
+        severityLabel: 'गंभीरता',
+        riskFlagsLabel: 'जोखिम टैग',
 
         // User Portal - Bookings Tab
         liveTracking: 'लाइव एम्बुलेंस ट्रैकिंग',

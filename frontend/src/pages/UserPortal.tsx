@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboard, Shield, Activity, Truck } from 'lucide-react';
+import { Loader2, MapPin, Mic, StopCircle, Map as MapIcon, LogOut, LayoutDashboard, Shield, Activity, Truck, AlertTriangle, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import mapboxgl from 'mapbox-gl';
@@ -659,6 +659,33 @@ const UserPortal = () => {
                                                 "{result.reasoning}"
                                             </p>
                                         </section>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <section>
+                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">{t.severityLabel}</div>
+                                                <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-lg border-2 shadow-sm ${result.priority.toLowerCase() === 'high' ? 'bg-red-50 border-red-200 text-red-600' :
+                                                        result.priority.toLowerCase() === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-600' :
+                                                            'bg-green-50 border-green-200 text-green-600'
+                                                    }`}>
+                                                    <AlertTriangle size={20} />
+                                                    {result.priority.toUpperCase()}
+                                                </div>
+                                            </section>
+
+                                            {result.risk_flags && result.risk_flags.length > 0 && (
+                                                <section>
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">{t.riskFlagsLabel}</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {result.risk_flags.map((flag, idx) => (
+                                                            <div key={idx} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-black border border-slate-200 flex items-center gap-1.5 hover:bg-slate-200 transition-colors cursor-default">
+                                                                <Tag size={12} className="text-slate-400" />
+                                                                {flag.replace(/_/g, ' ').toUpperCase()}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </section>
+                                            )}
+                                        </div>
 
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                                             <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
