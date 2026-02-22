@@ -11,6 +11,7 @@ import HospitalPortal from './pages/HospitalPortal';
 import AmbulancePortal from './pages/AmbulancePortal';
 import AmbulanceLogin from './pages/AmbulanceLogin';
 import HospitalLogin from './pages/HospitalLogin';
+import NetworkExplorer from './pages/NetworkExplorer';
 
 function App() {
   const { setUser, setLoading } = useAuthStore();
@@ -40,6 +41,7 @@ function App() {
           <Route path="/hospital/login" element={<HospitalLogin />} />
           <Route path="/ambulance" element={<AmbulancePortal />} />
           <Route path="/ambulance/login" element={<AmbulanceLogin />} />
+          <Route path="/network" element={<NetworkExplorer />} />
         </Routes>
       </Router>
     </LanguageProvider>

@@ -1,4 +1,5 @@
 import Hospital from '../models/Hospital.js';
+import { getIO } from '../config/socket.js';
 
 export const getHospitalByEmail = async (req, res) => {
     try {
@@ -18,6 +19,16 @@ export const getHospitalByEmail = async (req, res) => {
     } catch (error) {
         console.error("Get Hospital Error:", error);
         res.status(500).json({ message: "Server error fetching hospital data." });
+    }
+};
+
+export const getAllHospitals = async (req, res) => {
+    try {
+        const hospitals = await Hospital.find({});
+        res.json(hospitals);
+    } catch (error) {
+        console.error("Get All Hospitals Error:", error);
+        res.status(500).json({ message: "Server error fetching all hospitals." });
     }
 };
 
@@ -55,6 +66,12 @@ export const updateHospital = async (req, res) => {
         }
 
         await hospital.save();
+
+        // Broadcast the update to all connected clients (e.g., Network Explorer)
+        const io = getIO();
+        if (io) {
+            io.emit('HOSPITAL_DATA_UPDATED', hospital);
+        }
 
         res.json({ message: "Hospital updated successfully", hospital });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Activity, Shield, Truck, Home, LogOut } from 'lucide-react';
+import { Menu, X, Activity, Shield, Truck, Home, LogOut, Database } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Navbar = () => {
@@ -19,6 +19,7 @@ const Navbar = () => {
 
     const links = [
         { name: 'Home', path: '/', icon: Home },
+        { name: 'Demonstration', path: '/network', icon: Database },
         { name: 'User Portal', path: '/user', icon: Shield },
         { name: 'Hospital', path: '/hospital', icon: Activity },
         { name: 'Ambulance', path: '/ambulance', icon: Truck },
@@ -26,7 +27,8 @@ const Navbar = () => {
 
     const isPortal = location.pathname.startsWith('/user') ||
         location.pathname.startsWith('/hospital') ||
-        location.pathname.startsWith('/ambulance');
+        location.pathname.startsWith('/ambulance') ||
+        location.pathname.startsWith('/network');
 
     if (isPortal) return null;
 
