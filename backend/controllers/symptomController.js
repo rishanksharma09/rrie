@@ -1,11 +1,8 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
-const client = new OpenAI({
-    apiKey: process.env.MEGALLM_API_KEY,
-    baseURL: process.env.BASE_URL
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const analyzeSymptoms = async (req, res) => {
     try {
@@ -80,74 +77,65 @@ Return EXACTLY this JSON format:
         `;
 
 
-        const response = await client.chat.completions.create({
-            model: 'gpt-4o', // Common model for MegaLLM, or use your specific one
-            messages: [
-                { role: 'system', content: 'You are a medical triage assistant. Return ONLY valid JSON.' },
-                { role: 'user', content: prompt }
-            ],
-            response_format: { type: "json_object" }
-        });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        if (response.choices && response.choices.length > 0) {
-            const text = response.choices[0].message.content;
-            let jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonResponse = JSON.parse(jsonText);
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        let jsonText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const jsonResponse = JSON.parse(jsonText);
 
-            // --- Orchestration Integration ---
-            const { latitude, longitude, wantAmbulance } = req.body;
-            let orchestrationResult = null;
+        // --- Orchestration Integration ---
+        const { latitude, longitude, wantAmbulance } = req.body;
+        let orchestrationResult = null;
 
-            if (latitude && longitude) {
-                try {
-                    console.log(`[API] Orchestrating: Lat=${latitude}, Lng=${longitude}, WantAmbulance=${wantAmbulance}`);
-                    const mongoose = await import('mongoose');
-                    const { orchestrateReferral } = await import('../services/orchestration.js');
+        if (latitude && longitude) {
+            try {
+                console.log(`[API] Orchestrating: Lat=${latitude}, Lng=${longitude}, WantAmbulance=${wantAmbulance}`);
+                const mongoose = await import('mongoose');
+                const { orchestrateReferral } = await import('../services/orchestration.js');
 
-                    const referralId = new mongoose.Types.ObjectId();
-                    const triageData = {
-                        emergency_type: jsonResponse.emergency_type || 'General',
-                        severity: jsonResponse.severity || 'Medium',
-                        confidence: jsonResponse.confidence || 0.8,
-                        risk_flags: jsonResponse.risk_flags || []
-                    };
-                    const patientLocation = { lat: latitude, lng: longitude };
-                    const patientId = req.user?.uid || 'anonymous';
+                const referralId = new mongoose.Types.ObjectId();
+                const triageData = {
+                    emergency_type: jsonResponse.emergency_type || 'General',
+                    severity: jsonResponse.severity || 'Medium',
+                    confidence: jsonResponse.confidence || 0.8,
+                    risk_flags: jsonResponse.risk_flags || []
+                };
+                const patientLocation = { lat: latitude, lng: longitude };
+                const patientId = req.user?.uid || 'anonymous';
 
-                    orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId, wantAmbulance, patientId);
-                    console.log("Orchestration Result:", JSON.stringify(orchestrationResult, null, 2));
-                } catch (orchError) {
-                    console.error("CRITICAL: Orchestration Failed:", orchError);
-                    // Return a partial object so the UI doesn't completely break
-                    orchestrationResult = {
-                        error: orchError.message,
-                        hospital: null,
-                        ambulance: { message: "Orchestration Error" },
-                        alternatives: []
-                    };
-                }
+                orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId, wantAmbulance, patientId);
+                console.log("Orchestration Result:", JSON.stringify(orchestrationResult, null, 2));
+            } catch (orchError) {
+                console.error("CRITICAL: Orchestration Failed:", orchError);
+                // Return a partial object so the UI doesn't completely break
+                orchestrationResult = {
+                    error: orchError.message,
+                    hospital: null,
+                    ambulance: { message: "Orchestration Error" },
+                    alternatives: []
+                };
             }
-
-            const finalResponse = {
-                ...jsonResponse,
-                orchestration: orchestrationResult
-            };
-
-            console.log("--- ORCHESTRATION RESULT Keys:", Object.keys(orchestrationResult));
-            if (orchestrationResult.hospital) {
-                console.log("--- RECOMMENDED HOSPITAL:", {
-                    name: orchestrationResult.hospital.name,
-                    contact: orchestrationResult.hospital.contact,
-                    reason: orchestrationResult.hospital.reason
-                });
-            }
-            res.json(finalResponse);
-        } else {
-            throw new Error("No candidates or text found in response.");
         }
 
+        const finalResponse = {
+            ...jsonResponse,
+            orchestration: orchestrationResult
+        };
+
+        console.log("--- ORCHESTRATION RESULT Keys:", Object.keys(orchestrationResult));
+        if (orchestrationResult.hospital) {
+            console.log("--- RECOMMENDED HOSPITAL:", {
+                name: orchestrationResult.hospital.name,
+                contact: orchestrationResult.hospital.contact,
+                reason: orchestrationResult.hospital.reason
+            });
+        }
+        res.json(finalResponse);
+
     } catch (error) {
-        console.error("Gemini Analysis Error:", error);
+        console.error("Symptom Analysis Error:", error);
         res.status(500).json({ message: "Failed to analyze symptoms", error: error.message });
     }
 };
