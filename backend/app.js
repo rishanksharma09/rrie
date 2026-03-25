@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 import routes from './routes/index.js';
+import { apiLimiter } from './middlewares/rateLimitMiddleware.js';
 
 dotenv.config();
 
@@ -20,6 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+
+
+app.use('/api', apiLimiter); // Apply rate limiting to all API routes
 
 // Routes
 app.use('/api', routes);

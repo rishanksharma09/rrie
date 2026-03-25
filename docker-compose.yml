@@ -1,0 +1,43 @@
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rrie-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 5000
+      # Add other environment variables as needed
+      # FIREBASE_...
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      # TWILIO_...
+    networks:
+      - rrie-network
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rrie-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      - backend
+    networks:
+      - rrie-network
+    restart: unless-stopped
+
+networks:
+  rrie-network:
+    driver: bridge
