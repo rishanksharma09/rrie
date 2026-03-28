@@ -10,11 +10,14 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
+      REDIS_URL: redis://redis:6379
       # Add other environment variables as needed
       # FIREBASE_...
       # OPENAI_API_KEY: ${OPENAI_API_KEY}
       # GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       # TWILIO_...
+    depends_on:
+      - redis
     networks:
       - rrie-network
     restart: unless-stopped
@@ -34,6 +37,16 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       - backend
+    networks:
+      - rrie-network
+    restart: unless-stopped
+
+  # Redis Geospatial Cache
+  redis:
+    image: redis:alpine
+    container_name: rrie-redis
+    ports:
+      - "6379:6379"
     networks:
       - rrie-network
     restart: unless-stopped

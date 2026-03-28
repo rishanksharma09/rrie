@@ -1,4 +1,6 @@
 import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import redisClient from '../config/redis.js';
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -6,6 +8,10 @@ export const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+    prefix: 'rl:auth:'
+  }),
 });
 
 export const apiLimiter = rateLimit({
@@ -14,8 +20,11 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+    prefix: 'rl:api:'
+  }), 
 });
-
 
 export const strictLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
@@ -23,4 +32,8 @@ export const strictLimiter = rateLimit({
   message: 'Too many requests to this endpoint',
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+    prefix: 'rl:strict:'
+  }), 
 });
