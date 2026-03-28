@@ -22,10 +22,14 @@ const AmbulancePortal = () => {
         const verify = async () => {
             if (user && user.email) {
                 try {
+                    const token = await user.getIdToken();
                     console.log("[Auth] Verifying driver:", user.email);
                     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify({ email: user.email, role: 'ambulance' })
                     });
                     const data = await response.json();

@@ -44,6 +44,11 @@ export const initSocketService = async (io) => {
                 hospitalSockets.delete(socket.hospitalId);
                 console.log(`[Socket] Hospital offline: ${socket.hospitalId}`);
             }
+
+            if (socket.ambulanceId) {
+                redisClient.zRem('ambulances:locations', socket.ambulanceId);
+                console.log(`[Socket] Removed ambulance ${socket.ambulanceId} from location tracking`);
+            }
         });
     });
 };

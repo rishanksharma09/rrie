@@ -7,6 +7,7 @@ import Ambulance from '../../models/Ambulance.js';
 import Assignment from '../../models/Assignment.js';
 import { calculateETA } from '../../utils/mapboxUtils.js';
 import { driverSockets } from './socketMaps.js';
+import redisClient from '../../config/redis.js';
 
 /**
  * Sets up all driver-related socket event handlers
@@ -150,10 +151,13 @@ const handleEmergencyAcceptance = (socket, io, userSockets) => {
 const handleLocationUpdate = (socket, io, userSockets) => {
     return async ({ ambulanceId, coordinates }) => {
         try {
-            // Update ambulance location in database
-            await Ambulance.findByIdAndUpdate(ambulanceId, {
-                location: { type: 'Point', coordinates }
-            });
+
+            await redisClient.geoAdd('ambulances:locations', {
+            longitude: coordinates[0],
+            latitude: coordinates[1],
+            member: ambulanceId // The unique ID of the ambulance
+        });
+           
 
             // Check if this ambulance has an active assignment
             const activeAssignment = await Assignment.findOne({

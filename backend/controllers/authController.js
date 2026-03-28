@@ -11,11 +11,12 @@ export const verifyRole = async (req, res) => {
 
         let isValid = false;
         let userData = null;
+        const normalizedEmail = email.toLowerCase().trim();
 
         if (role === 'ambulance') {
-            userData = await Ambulance.findOne({ email });
+            userData = await Ambulance.findOne({ email: normalizedEmail });
         } else if (role === 'hospital') {
-            userData = await Hospital.findOne({ email });
+            userData = await Hospital.findOne({ email: normalizedEmail });
         } else {
             return res.status(400).json({ message: "Invalid role specified." });
         }

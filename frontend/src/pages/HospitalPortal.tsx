@@ -23,10 +23,14 @@ const HospitalPortal = () => {
         const verifyAndFetch = async () => {
             if (user && user.email) {
                 try {
+                    const token = await user.getIdToken();
                     // 1. Verify Role
                     const authResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify({ email: user.email, role: 'hospital' })
                     });
                     const authData = await authResponse.json();
@@ -35,7 +39,9 @@ const HospitalPortal = () => {
                         setAuthorized(true);
                         setHospitalId(authData.details.id);
                         // 2. Fetch Hospital Data
-                        const dataResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospital?email=${user.email}`);
+                        const dataResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospital?email=${user.email}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
                         if (dataResponse.ok) {
                             const data = await dataResponse.json();
                             setHospitalData(data);
@@ -124,9 +130,14 @@ const HospitalPortal = () => {
                 status: hospitalData.status // Include updated status
             };
 
+            const token = await user.getIdToken();
+
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hospital`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ email: user.email, updates })
             });
 

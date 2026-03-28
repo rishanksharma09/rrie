@@ -18,10 +18,15 @@ const AmbulanceLogin = () => {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
+            const token = await user.getIdToken();
+            
             // Verify role with backend
             const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/verify`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify({ email: user.email, role: 'ambulance' })
             });
 

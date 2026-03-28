@@ -5,6 +5,7 @@ import app from './app.js';
 import { initSocketService } from './services/socketService.js';
 import whatsappRoutes from "./routes/whatsapp.routes.js";
 import { setIO } from './config/socket.js';
+import redisClient from './config/redis.js';
 
 // 👇 ADD THESE TWO LINES (CRITICAL FOR TWILIO)
 app.use(express.urlencoded({ extended: false }));
@@ -29,6 +30,7 @@ const startServer = async () => {
     try {
         // 1. Connect to Database FIRST
         await connectDB();
+        await redisClient.connect();
 
         // 2. Start the Server
         server.listen(PORT, () => {

@@ -4,6 +4,7 @@ import Assignment from '../models/Assignment.js';
 
 import { getIO } from '../config/socket.js';
 import { driverSockets } from './socketService.js';
+import redisClient from '../config/redis.js';
 
 // --- Helper: Haversine Distance (in km) ---
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -150,36 +151,41 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
     }
     console.log(`[Orchestration] Best Hospital: ${bestHospital.name} (Score: ${bestHospital.score})`);
 
-    // 4. Find Nearest Ambulance (Conditional)
+    // 4. Find Nearest Ambulance (Conditional) USING REDIS
     console.log(`[Orchestration] Referral ${referralId} - Step 4: Finding ambulance (Requested: ${wantAmbulance})...`);
     let bestAmbulance = null;
+
     if (wantAmbulance) {
-        // Fetch 'Available' ambulances
-        const ambulances = await Ambulance.find({ status: 'Available' });
-
-        // Map distances
-        const scoredAmbulances = ambulances.map(amb => {
-            const ambLat = amb.location.coordinates[1];
-            const ambLng = amb.location.coordinates[0];
-
-            const dist = calculateDistance(
-                patientLocation.lat, patientLocation.lng,
-                ambLat, ambLng
+        try {
+            // Search Redis for ambulances within a 50km radius, sorted closest first
+            const nearbyAmbulances = await redisClient.geoSearch(
+                'ambulances:locations',
+                { longitude: patientLocation.lng, latitude: patientLocation.lat },
+                { radius: 50, unit: 'km' },
+                { WITHDIST: true, SORT: 'ASC' }
             );
 
-            return {
-                id: amb._id,
-                vehicleNumber: amb.vehicleNumber,
-                type: amb.type,
-                distance: parseFloat(dist.toFixed(2)),
-                location: { lat: ambLat, lng: ambLng }
-            };
-        });
+            // If Redis found at least one ambulance nearby
+            if (nearbyAmbulances.length > 0) {
+                const closestId = nearbyAmbulances[0].member; // Gives us the MongoDB _id string
 
-        // Sort by Distance Ascending (Nearest first)
-        scoredAmbulances.sort((a, b) => a.distance - b.distance);
-        bestAmbulance = scoredAmbulances.length > 0 ? scoredAmbulances[0] : null;
+                // Fetch static details from Mongo (Vehicle number, etc.)
+                const ambDetails = await Ambulance.findById(closestId);
+
+                if (ambDetails && ambDetails.status === 'Available') {
+                    bestAmbulance = {
+                        id: ambDetails._id,
+                        vehicleNumber: ambDetails.vehicleNumber,
+                        type: ambDetails.type,
+                        distance: parseFloat(nearbyAmbulances[0].distance.toFixed(2))
+                    };
+                }
+            }
+        } catch (err) {
+            console.error("[Redis] Error fetching nearest ambulance:", err);
+        }
     }
+
 
     // 5. Create Assignment Record
     let assignmentId = null;
@@ -209,46 +215,30 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         const savedAssignment = await assignment.save();
         assignmentId = savedAssignment._id;
 
-        // --- Notify Nearby Drivers ---
+        // --- Notify Nearby Drivers USING REDIS ---
         const io = getIO();
         if (savedAssignment.status === 'Pending' && io) {
             try {
-                console.log(`[Orchestration] DriverSockets Map Size: ${driverSockets.size}`);
-                for (let [id, sid] of driverSockets.entries()) {
-                    console.log(`[Orchestration]   - Registered Driver ID: ${id}, Socket: ${sid}`);
-                }
+                console.log(`[Orchestration] Searching for drivers via Redis near: [${patientLocation.lng}, ${patientLocation.lat}]`);
 
-                console.log(`[Orchestration] Searching for drivers near: [${patientLocation.lng}, ${patientLocation.lat}] with status: Available and isOnline: true`);
-                const query = {
-                    status: 'Available',
-                    isOnline: true,
-                    location: {
-                        $near: {
-                            $geometry: {
-                                type: 'Point',
-                                coordinates: [patientLocation.lng, patientLocation.lat]
-                            },
-                            $maxDistance: 5000000
-                        }
-                    }
-                };
-                console.log(`[Orchestration] Query JSON: ${JSON.stringify(query)}`);
-                let nearbyDrivers = await Ambulance.find(query);
+                // Ask Redis for all ambulance IDs within 50km
+                // (We don't need sorting or distance here, just the IDs)
+                const nearbyFromRedis = await redisClient.geoSearch(
+                    'ambulances:locations',
+                    { longitude: patientLocation.lng, latitude: patientLocation.lat },
+                    { radius: 50, unit: 'km' }
+                );
 
-                if (nearbyDrivers.length === 0) {
-                    console.log("[Orchestration] No 'Available' drivers found. Checking for ANY online drivers...");
-                    const anyOnline = await Ambulance.find({ isOnline: true });
-                    console.log(`[Orchestration] Found ${anyOnline.length} total online drivers (regardless of status or range).`);
-                    anyOnline.forEach(d => console.log(`  - ${d.vehicleNumber}: Status=${d.status}, ID=${d._id}, SocketId=${d.socketId}`));
-                }
+                console.log(`[Orchestration] Redis found ${nearbyFromRedis.length} drivers nearby.`);
 
-                console.log(`[Orchestration] Alerting ${nearbyDrivers.length} available drivers.`);
+                // Loop through the IDs Redis gave us
+                for (const redisAmbulanceId of nearbyFromRedis) {
+                    const aid = String(redisAmbulanceId);
 
-                nearbyDrivers.forEach(driver => {
-                    const aid = String(driver._id);
-                    const liveSocketId = driverSockets.get(aid) || driver.socketId;
-                    console.log(`[Orchestration] Driver ${driver.vehicleNumber} (ID: ${aid}) - Online: ${driver.isOnline}, Status: ${driver.status}, SocketId: ${liveSocketId}`);
+                    // Check if they have an active WebSocket connection
+                    const liveSocketId = driverSockets.get(aid);
 
+                    // If they are online, emit the event directly to them!
                     if (liveSocketId) {
                         console.log(`[Orchestration] EMITTING NEW_EMERGENCY to socket: ${liveSocketId}`);
                         io.to(liveSocketId).emit('NEW_EMERGENCY', {
@@ -257,14 +247,14 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                             patientLocation: savedAssignment.patientLocation,
                             hospitalName: bestHospital.name
                         });
-                    } else {
-                        console.warn(`[Orchestration] FAILED TO EMIT: No socket ID found for driver ${driver.vehicleNumber}`);
                     }
-                });
+                }
             } catch (socketError) {
-                console.error("[Orchestration] Socket notification error:", socketError);
+                console.error("[Orchestration] Redis Socket notification error:", socketError);
             }
-        } else {
+        }
+
+        else {
             console.log(`[Orchestration] Skip notify: assignment status is ${savedAssignment.status}. io object present: ${!!io}`);
             if (savedAssignment.status === 'Pending' && !io) {
                 console.error("[Orchestration] CRITICAL: io object is NULL! Socket notifications will not work.");
