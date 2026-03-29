@@ -1,13 +1,13 @@
 const getHome = (req, res) => {
-    res.json({ message: 'API is running...' });
+    res.status(200).json({ message: 'API is running...' });
 };
 
 const getTest = (req, res) => {
-    res.json({ message: 'Test route functionality' });
+    res.status(200).json({ message: 'Test route functionality' });
 };
 
 const getProtected = (req, res) => {
-    res.json({
+    res.status(200).json({
         message: 'Access granted to protected route',
         user: req.user
     });
