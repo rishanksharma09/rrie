@@ -8,11 +8,13 @@ import dotenv from 'dotenv';
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 import routes from './routes/index.js';
 import { apiLimiter } from './middlewares/rateLimitMiddleware.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+
+const swaggerDocument = YAML.load('./swagger.yaml');
+
 
 dotenv.config();
-
-// Connect to Database
-// connectDB(); // Moved to server.js for sync startup
 
 const app = express();
 
@@ -39,6 +41,9 @@ app.use('/api', routes);
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Error Handling
 Sentry.setupExpressErrorHandler(app)

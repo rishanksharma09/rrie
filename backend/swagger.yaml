@@ -1,0 +1,356 @@
+openapi: 3.0.0
+info:
+  title: RRIE Backend API
+  description: API documentation for the RRIE Ambulance Tracking system and Symptom parsing
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Local server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase JWT
+  schemas:
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    
+    Hospital:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        level:
+          type: string
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            address:
+              type: string
+        contactNumber:
+          type: string
+        beds:
+          type: object
+          properties:
+            icuAvailable:
+              type: integer
+            icuTotal:
+              type: integer
+            erAvailable:
+              type: integer
+            wardAvailable:
+              type: integer
+        specialists:
+          type: object
+          properties:
+            neurologist: { type: boolean }
+            cardiologist: { type: boolean }
+            orthopedic: { type: boolean }
+            pediatrician: { type: boolean }
+        equipment:
+          type: object
+          properties:
+            ctScan: { type: boolean }
+            mri: { type: boolean }
+            ventilator: { type: boolean }
+            cathLab: { type: boolean }
+        status:
+          type: string
+          enum: [active, overloaded, offline]
+
+    Ambulance:
+      type: object
+      properties:
+        _id:
+          type: string
+        vehicleNumber:
+          type: string
+        email:
+          type: string
+        type:
+          type: string
+          enum: ['ALS', 'BLS', 'Patient Transport', 'Neonatal', 'Air']
+        status:
+          type: string
+        location:
+          type: object
+          properties:
+            coordinates:
+              type: array
+              items: { type: number }
+        driverName:
+          type: string
+        contactNumber:
+          type: string
+        isOnline:
+          type: boolean
+
+    Assignment:
+      type: object
+      properties:
+        _id:
+          type: string
+        referralId:
+          type: string
+        patientLocation:
+          type: object
+          properties:
+            lat: { type: number }
+            lng: { type: number }
+        triage:
+          type: object
+          properties:
+            emergency_type: { type: string }
+            severity: { type: string }
+            confidence: { type: number }
+            risk_flags:
+              type: array
+              items: { type: string }
+        assignedHospital:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            contact: { type: string }
+            location:
+              type: object
+              properties:
+                lat: { type: number }
+                lng: { type: number }
+                address: { type: string }
+            distance: { type: number }
+            score: { type: number }
+            reason: { type: string }
+        assignedAmbulance:
+          type: object
+          properties:
+            id: { oneOf: [ { type: string }, { $ref: '#/components/schemas/Ambulance' } ] }
+            vehicleNumber: { type: string }
+            eta: { type: string }
+            distance: { type: number }
+            status: { type: string }
+        status:
+          type: string
+          enum: [Pending, Dispatched, Arrived, Complete, Cancelled, Referral Only]
+        patientId:
+          type: string
+
+    SymptomAnalysisResponse:
+      type: object
+      properties:
+        emergency_type: { type: string }
+        severity: { type: string }
+        confidence: { type: number }
+        risk_flags:
+          type: array
+          items: { type: string }
+        reasoning: { type: string }
+        orchestration:
+          type: object
+          properties:
+            referralId: { type: string }
+            hospital: { $ref: '#/components/schemas/Hospital' }
+            ambulance: { $ref: '#/components/schemas/Ambulance' }
+            alternatives:
+              type: array
+              items: { $ref: '#/components/schemas/Hospital' }
+security:
+  - BearerAuth: []
+
+paths:
+  /:
+    get:
+      summary: Health Check
+      security: []
+      responses:
+        '200':
+          description: API is running successfully
+          content:
+            text/plain:
+              schema: { type: string, example: "API is running..." }
+
+  /test:
+    get:
+      summary: Test public endpoint
+      security: []
+      responses:
+        '200':
+          description: Test successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+
+  /protected:
+    get:
+      summary: Protected route test
+      responses:
+        '200':
+          description: Authorized successful request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+
+  /debug-sentry:
+    get:
+      summary: Trigger a Sentry test error
+      security: []
+      responses:
+        '500':
+          description: Artificial error triggered
+
+  /auth/verify:
+    post:
+      summary: Verify user role and token
+      responses:
+        '200':
+          description: Role verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role: { type: string }
+                  authorized: { type: boolean }
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /symptoms/analyze:
+    post:
+      summary: Analyze symptoms via AI
+      description: Send a string of raw symptoms and receive a calculated severity and recommended specialist category.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                symptoms:
+                  type: string
+                  example: "I have sharp chest pain and my left arm is numb."
+                latitude: { type: number }
+                longitude: { type: number }
+                wantAmbulance: { type: boolean }
+      responses:
+        '200':
+          description: AI classification result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SymptomAnalysisResponse' }
+        '400':
+          description: Invalid payload
+        '500':
+          description: AI / Parsing Failure
+
+  /hospital/:
+    get:
+      summary: Get hospital details by email
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Hospital data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hospital' }
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+
+    put:
+      summary: Update hospital details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                updates:
+                  type: object
+                  properties:
+                    beds: { type: object }
+                    status: { type: string, enum: [active, overloaded, offline] }
+      responses:
+        '200':
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  hospital: { $ref: '#/components/schemas/Hospital' }
+        '401':
+          description: Unauthorized
+
+  /hospital/all:
+    get:
+      summary: Get all registered hospitals
+      responses:
+        '200':
+          description: List of hospitals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Hospital' }
+
+  /assignments/my-bookings:
+    get:
+      summary: Get active assignments/bookings for the logged-in user
+      responses:
+        '200':
+          description: List of active bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Assignment' }
+        '401':
+          description: Unauthorized
+
+  /assignments/{id}:
+    get:
+      summary: Get specific assignment details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The Assignment ID
+      responses:
+        '200':
+          description: Assignment details payload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Assignment' }
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
