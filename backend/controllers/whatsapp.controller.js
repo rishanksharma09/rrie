@@ -9,7 +9,7 @@ export const handleWhatsApp = async (req, res) => {
         const latitude = req.body.Latitude || null;
         const longitude = req.body.Longitude || null;
 
-        console.log("Incoming:", message);
+        logger.info("Incoming:", message);
 
         if (!message) {
             return res.status(400).send("No message");
@@ -51,7 +51,7 @@ ETA: ${data.orchestration.hospital.eta} mins
         res.end(twiml.toString());
 
     } catch (error) {
-        console.error("WhatsApp Error:", error.message);
+        logger.error("WhatsApp Error:", error.message);
         res.status(500).send("Server Error");
     }
 };

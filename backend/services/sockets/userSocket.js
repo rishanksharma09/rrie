@@ -3,6 +3,8 @@
  * Handles user registration and tracking updates
  */
 
+import logger from '../../config/logger.js';
+
 /**
  * Sets up all user-related socket event handlers
  * @param {Object} socket - Individual socket connection
@@ -24,6 +26,6 @@ const handleUserRegistration = (socket, userSockets) => {
     return ({ userId }) => {
         userSockets.set(userId, socket.id);
         socket.userId = userId;
-        console.log(`[UserSocket] User registered for tracking: ${userId}`);
+        logger.info(`[UserSocket] User registered for tracking: ${userId}`);
     };
 };

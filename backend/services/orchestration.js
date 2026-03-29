@@ -58,17 +58,17 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
     const { emergency_type, severity } = triageData;
 
     // 1. Get Requirements
-    console.log(`[Orchestration] Referral ${referralId} - Emergency: ${emergency_type}, Severity: ${severity}`);
+    logger.info(`[Orchestration] Referral ${referralId} - Emergency: ${emergency_type}, Severity: ${severity}`);
     const requirements = getRequirements(emergency_type);
-    console.log(`[Orchestration] Requirements:`, JSON.stringify(requirements));
+    logger.info(`[Orchestration] Requirements:`, JSON.stringify(requirements));
 
     // 2. Fetch Active Facilities
     const hospitalsRaw = await Hospital.find({ status: { $ne: 'offline' } });
     const hospitals = hospitalsRaw.map(h => h.toObject());
-    console.log(`[Orchestration] Found ${hospitals.length} active hospitals.`);
+    logger.info(`[Orchestration] Found ${hospitals.length} active hospitals.`);
 
     // 3. Filter & Score Hospitals
-    console.log(`[Orchestration] Referral ${referralId} - Step 3: Scoring hospitals...`);
+    logger.info(`[Orchestration] Referral ${referralId} - Step 3: Scoring hospitals...`);
     const scoredHospitals = hospitals.map(hospital => {
         // --- 3a. Capability Filtering (Hard Filter) ---
         let capabilityMatch = true;
@@ -105,7 +105,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         }
 
         if (!capabilityMatch) {
-            console.log(`[Orchestration] Hospital ${hospital.name} EXCLUDED. Missing: ${missingCapabilities.join(', ')}`);
+            logger.info(`[Orchestration] Hospital ${hospital.name} EXCLUDED. Missing: ${missingCapabilities.join(', ')}`);
             return { id: hospital._id, eligible: false, reason: `Missing: ${missingCapabilities.join(', ')}` };
         }
 
@@ -141,18 +141,18 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
 
     // Sort by Score Descending
     scoredHospitals.sort((a, b) => b.score - a.score);
-    console.log(`[Orchestration] Scored ${scoredHospitals.length} eligible hospitals.`);
+    logger.info(`[Orchestration] Scored ${scoredHospitals.length} eligible hospitals.`);
 
     const bestHospital = scoredHospitals.length > 0 ? scoredHospitals[0] : null;
 
     if (!bestHospital) {
-        console.warn("[Orchestration] No eligible hospital found!");
+        logger.warn("[Orchestration] No eligible hospital found!");
         return { error: "No eligible facility found within range matching capabilities." };
     }
-    console.log(`[Orchestration] Best Hospital: ${bestHospital.name} (Score: ${bestHospital.score})`);
+    logger.info(`[Orchestration] Best Hospital: ${bestHospital.name} (Score: ${bestHospital.score})`);
 
     // 4. Find Nearest Ambulance (Conditional) USING REDIS
-    console.log(`[Orchestration] Referral ${referralId} - Step 4: Finding ambulance (Requested: ${wantAmbulance})...`);
+    logger.info(`[Orchestration] Referral ${referralId} - Step 4: Finding ambulance (Requested: ${wantAmbulance})...`);
     let bestAmbulance = null;
 
     if (wantAmbulance) {
@@ -182,7 +182,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                 }
             }
         } catch (err) {
-            console.error("[Redis] Error fetching nearest ambulance:", err);
+            logger.error("[Redis] Error fetching nearest ambulance:", err);
         }
     }
 
@@ -219,7 +219,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         const io = getIO();
         if (savedAssignment.status === 'Pending' && io) {
             try {
-                console.log(`[Orchestration] Searching for drivers via Redis near: [${patientLocation.lng}, ${patientLocation.lat}]`);
+                logger.info(`[Orchestration] Searching for drivers via Redis near: [${patientLocation.lng}, ${patientLocation.lat}]`);
 
                 // Ask Redis for all ambulance IDs within 50km
                 // (We don't need sorting or distance here, just the IDs)
@@ -229,7 +229,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                     { radius: 50, unit: 'km' }
                 );
 
-                console.log(`[Orchestration] Redis found ${nearbyFromRedis.length} drivers nearby.`);
+                logger.info(`[Orchestration] Redis found ${nearbyFromRedis.length} drivers nearby.`);
 
                 // Loop through the IDs Redis gave us
                 for (const redisAmbulanceId of nearbyFromRedis) {
@@ -240,7 +240,7 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
 
                     // If they are online, emit the event directly to them!
                     if (liveSocketId) {
-                        console.log(`[Orchestration] EMITTING NEW_EMERGENCY to socket: ${liveSocketId}`);
+                        logger.info(`[Orchestration] EMITTING NEW_EMERGENCY to socket: ${liveSocketId}`);
                         io.to(liveSocketId).emit('NEW_EMERGENCY', {
                             assignmentId: savedAssignment._id,
                             triage: savedAssignment.triage,
@@ -250,18 +250,18 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                     }
                 }
             } catch (socketError) {
-                console.error("[Orchestration] Redis Socket notification error:", socketError);
+                logger.error("[Orchestration] Redis Socket notification error:", socketError);
             }
         }
 
         else {
-            console.log(`[Orchestration] Skip notify: assignment status is ${savedAssignment.status}. io object present: ${!!io}`);
+            logger.info(`[Orchestration] Skip notify: assignment status is ${savedAssignment.status}. io object present: ${!!io}`);
             if (savedAssignment.status === 'Pending' && !io) {
-                console.error("[Orchestration] CRITICAL: io object is NULL! Socket notifications will not work.");
+                logger.error("[Orchestration] CRITICAL: io object is NULL! Socket notifications will not work.");
             }
         }
     } catch (saveError) {
-        console.error("[Orchestration] CRITICAL: Failed to save assignment:", saveError);
+        logger.error("[Orchestration] CRITICAL: Failed to save assignment:", saveError);
         // We continue anyway to return the recommendation to the user, but mark as failed
         return {
             success: false,

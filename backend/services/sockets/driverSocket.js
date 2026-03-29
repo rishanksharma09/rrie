@@ -40,7 +40,7 @@ export const setupDriverSocketHandlers = (socket, io, userSockets) => {
  */
 const handleDriverRegistration = (socket) => {
     return async ({ ambulanceId }) => {
-        console.log(`[DriverSocket] Registering driver for ambulance: ${ambulanceId}`);
+        logger.info(`[DriverSocket] Registering driver for ambulance: ${ambulanceId}`);
         try {
             const ambulance = await Ambulance.findByIdAndUpdate(
                 ambulanceId,
@@ -52,17 +52,17 @@ const handleDriverRegistration = (socket) => {
                 socket.ambulanceId = ambulanceId;
                 const aid = String(ambulanceId);
                 driverSockets.set(aid, socket.id);
-                console.log(`[DriverSocket] Driver registered: ${ambulance.vehicleNumber} (ID: ${aid}) → ${socket.id}`);
+                logger.info(`[DriverSocket] Driver registered: ${ambulance.vehicleNumber} (ID: ${aid}) → ${socket.id}`);
                 socket.emit('registration_success', {
                     status: 'online',
                     vehicleNumber: ambulance.vehicleNumber
                 });
             } else {
-                console.warn(`[DriverSocket] Ambulance ${ambulanceId} not found in database`);
+                logger.warn(`[DriverSocket] Ambulance ${ambulanceId} not found in database`);
                 socket.emit('error', { message: 'Ambulance not found' });
             }
         } catch (error) {
-            console.error('[DriverSocket] Driver registration error:', error);
+            logger.error('[DriverSocket] Driver registration error:', error);
             socket.emit('error', { message: 'Registration failed' });
         }
     };
@@ -79,12 +79,12 @@ const handleDriverRegistration = (socket) => {
 // (CAN USE QUEUE SYSTEM HERE IF NEEDED)
 const handleEmergencyAcceptance = (socket, io, userSockets) => {
     return async ({ assignmentId, ambulanceId }) => {
-        console.log(`[DriverSocket] Accepting emergency: Assignment=${assignmentId}, Ambulance=${ambulanceId}`);
+        logger.info(`[DriverSocket] Accepting emergency: Assignment=${assignmentId}, Ambulance=${ambulanceId}`);
         try {
             // Get ambulance details
             const ambulance = await Ambulance.findById(ambulanceId);
             if (!ambulance) {
-                console.warn(`[DriverSocket] Ambulance ${ambulanceId} not found`);
+                logger.warn(`[DriverSocket] Ambulance ${ambulanceId} not found`);
                 return socket.emit('error', { message: 'Ambulance not found' });
             }
 
@@ -105,7 +105,7 @@ const handleEmergencyAcceptance = (socket, io, userSockets) => {
             ).populate('assignedHospital.id');
 
             if (!assignment) {
-                console.warn(`[DriverSocket] Assignment ${assignmentId} already taken or invalid`);
+                logger.warn(`[DriverSocket] Assignment ${assignmentId} already taken or invalid`);
                 return socket.emit('error', { message: 'Assignment already taken' });
             }
 
@@ -123,7 +123,7 @@ const handleEmergencyAcceptance = (socket, io, userSockets) => {
             ambulance.status = 'Busy';
             await ambulance.save();
 
-            console.log(`[DriverSocket] Emergency ${assignmentId} accepted by ${ambulance.vehicleNumber}`);
+            logger.info(`[DriverSocket] Emergency ${assignmentId} accepted by ${ambulance.vehicleNumber}`);
 
             // Confirm assignment to driver
             socket.emit('assignment_confirmed', assignment);
@@ -135,7 +135,7 @@ const handleEmergencyAcceptance = (socket, io, userSockets) => {
             }
 
         } catch (error) {
-            console.error('[DriverSocket] Emergency acceptance error:', error);
+            logger.error('[DriverSocket] Emergency acceptance error:', error);
             socket.emit('error', { message: 'Failed to accept assignment', details: error.message });
         }
     };
@@ -153,11 +153,11 @@ const handleLocationUpdate = (socket, io, userSockets) => {
         try {
 
             await redisClient.geoAdd('ambulances:locations', {
-            longitude: coordinates[0],
-            latitude: coordinates[1],
-            member: ambulanceId // The unique ID of the ambulance
-        });
-           
+                longitude: coordinates[0],
+                latitude: coordinates[1],
+                member: ambulanceId // The unique ID of the ambulance
+            });
+
 
             // Check if this ambulance has an active assignment
             const activeAssignment = await Assignment.findOne({
@@ -192,7 +192,7 @@ const handleLocationUpdate = (socket, io, userSockets) => {
                 }
             }
         } catch (error) {
-            console.error('[DriverSocket] Location update error:', error);
+            logger.error('[DriverSocket] Location update error:', error);
         }
     };
 };
@@ -204,7 +204,7 @@ const handleLocationUpdate = (socket, io, userSockets) => {
  */
 const handleMissionCompletion = (socket) => {
     return async ({ ambulanceId, assignmentId }) => {
-        console.log(`[DriverSocket] Completing mission: Ambulance=${ambulanceId}, Assignment=${assignmentId}`);
+        logger.info(`[DriverSocket] Completing mission: Ambulance=${ambulanceId}, Assignment=${assignmentId}`);
         try {
             // Reset ambulance to available
             await Ambulance.findByIdAndUpdate(ambulanceId, { status: 'Available' });
@@ -215,9 +215,9 @@ const handleMissionCompletion = (socket) => {
             }
 
             socket.emit('mission_completed', { status: 'Available' });
-            console.log(`[DriverSocket] Driver ${ambulanceId} reset to Available`);
+            logger.info(`[DriverSocket] Driver ${ambulanceId} reset to Available`);
         } catch (error) {
-            console.error('[DriverSocket] Mission completion error:', error);
+            logger.error('[DriverSocket] Mission completion error:', error);
         }
     };
 };
@@ -231,17 +231,17 @@ const handleMissionCompletion = (socket) => {
 const handlePassToNextUnit = (socket, io) => {
     return async ({ assignmentId, ambulanceId }) => {
         const passingId = String(ambulanceId);
-        console.log(`[DriverSocket] Passing to next unit: Assignment=${assignmentId}, by Ambulance=${passingId}`);
+        logger.info(`[DriverSocket] Passing to next unit: Assignment=${assignmentId}, by Ambulance=${passingId}`);
 
         try {
             const assignment = await Assignment.findById(String(assignmentId));
             if (!assignment) {
-                console.warn(`[DriverSocket] Assignment ${assignmentId} not found`);
+                logger.warn(`[DriverSocket] Assignment ${assignmentId} not found`);
                 return;
             }
 
             if (!['Pending', 'Dispatched'].includes(assignment.status)) {
-                console.warn(`[DriverSocket] Cannot pass assignment with status: ${assignment.status}`);
+                logger.warn(`[DriverSocket] Cannot pass assignment with status: ${assignment.status}`);
                 return;
             }
 
@@ -250,7 +250,7 @@ const handlePassToNextUnit = (socket, io) => {
                 assignment.status = 'Pending';
                 assignment.assignedAmbulance = undefined;
                 await assignment.save();
-                console.log(`[DriverSocket] Reset assignment ${assignmentId} to Pending`);
+                logger.info(`[DriverSocket] Reset assignment ${assignmentId} to Pending`);
             }
 
             const emergencyPayload = {
@@ -265,23 +265,23 @@ const handlePassToNextUnit = (socket, io) => {
                 .filter(([aid]) => aid !== passingId)
                 .map(([, sid]) => sid);
 
-            console.log(`[DriverSocket] Re-dispatching to ${otherSocketIds.length} other drivers`);
+            logger.info(`[DriverSocket] Re-dispatching to ${otherSocketIds.length} other drivers`);
 
             if (otherSocketIds.length > 0) {
                 // Send to other drivers
                 otherSocketIds.forEach(sid => {
-                    console.log(`[DriverSocket] Sending NEW_EMERGENCY to socket: ${sid}`);
+                    logger.info(`[DriverSocket] Sending NEW_EMERGENCY to socket: ${sid}`);
                     io.to(sid).emit('NEW_EMERGENCY', emergencyPayload);
                 });
             } else {
                 // No other drivers available - re-queue to same driver after delay
-                console.warn('[DriverSocket] No other drivers online, re-queuing to same driver in 3s');
+                logger.warn('[DriverSocket] No other drivers online, re-queuing to same driver in 3s');
                 setTimeout(() => {
                     socket.emit('NEW_EMERGENCY', emergencyPayload);
                 }, 3000);
             }
         } catch (error) {
-            console.error('[DriverSocket] Pass to next unit error:', error);
+            logger.error('[DriverSocket] Pass to next unit error:', error);
         }
     };
 };

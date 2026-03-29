@@ -7,13 +7,15 @@ import { resetAllAmbulancesOnStartup } from './socketMaps.js';
 import { setupDriverSocketHandlers } from './driverSocket.js';
 import { setupHospitalSocketHandlers } from './hospitalSocket.js';
 import { setupUserSocketHandlers } from './userSocket.js';
+import logger from '../../config/logger.js';
+import redisClient from '../../config/redis.js';
 
 /**
  * Initializes the Socket.IO service with all event handlers
  * @param {Object} io - Socket.IO server instance
  */
 export const initSocketService = async (io) => {
-    console.log('[Socket] Initializing Socket Service...');
+    logger.info('[Socket] Initializing Socket Service...');
 
     // Reset all ambulances to offline on server restart
     await resetAllAmbulancesOnStartup();
@@ -23,7 +25,7 @@ export const initSocketService = async (io) => {
     const hospitalSockets = new Map();  // hospitalId -> socketId
 
     io.on('connection', (socket) => {
-        console.log(`[Socket] New connection: ${socket.id}`);
+        logger.info(`[Socket] New connection: ${socket.id}`);
 
         // Setup all socket event handlers
         setupDriverSocketHandlers(socket, io, userSockets);
@@ -32,7 +34,7 @@ export const initSocketService = async (io) => {
 
         // Handle disconnection cleanup
         socket.on('disconnect', () => {
-            console.log(`[Socket] Client disconnected: ${socket.id}`);
+            logger.info(`[Socket] Client disconnected: ${socket.id}`);
 
             // Cleanup user socket mapping
             if (socket.userId) {
@@ -42,12 +44,12 @@ export const initSocketService = async (io) => {
             // Cleanup hospital socket mapping
             if (socket.hospitalId) {
                 hospitalSockets.delete(socket.hospitalId);
-                console.log(`[Socket] Hospital offline: ${socket.hospitalId}`);
+                logger.info(`[Socket] Hospital offline: ${socket.hospitalId}`);
             }
 
             if (socket.ambulanceId) {
                 redisClient.zRem('ambulances:locations', socket.ambulanceId);
-                console.log(`[Socket] Removed ambulance ${socket.ambulanceId} from location tracking`);
+                logger.info(`[Socket] Removed ambulance ${socket.ambulanceId} from location tracking`);
             }
         });
     });

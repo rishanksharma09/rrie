@@ -4,6 +4,7 @@
  */
 
 import Ambulance from '../../models/Ambulance.js';
+import logger from '../../config/logger.js';
 
 /**
  * Module-level map to track active driver socket connections
@@ -17,14 +18,14 @@ export const driverSockets = new Map();
  */
 export const resetAllAmbulancesOnStartup = async () => {
     try {
-        console.log('[Socket] Resetting all ambulance statuses in DB...');
+        logger.info('[Socket] Resetting all ambulance statuses in DB...');
         await Ambulance.updateMany({}, {
             isOnline: false,
             socketId: null,
             status: 'Available'
         });
-        console.log('[Socket] All ambulances reset to offline and available.');
+        logger.info('[Socket] All ambulances reset to offline and available.');
     } catch (err) {
-        console.error('[Socket] Failed to reset ambulance statuses:', err);
+        logger.error('[Socket] Failed to reset ambulance statuses:', err);
     }
 };

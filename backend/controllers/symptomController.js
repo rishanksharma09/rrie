@@ -91,7 +91,7 @@ Return EXACTLY this JSON format:
 
         if (latitude && longitude) {
             try {
-                console.log(`[API] Orchestrating: Lat=${latitude}, Lng=${longitude}, WantAmbulance=${wantAmbulance}`);
+                logger.info(`[API] Orchestrating: Lat=${latitude}, Lng=${longitude}, WantAmbulance=${wantAmbulance}`);
                 const mongoose = await import('mongoose');
                 const { orchestrateReferral } = await import('../services/orchestration.js');
 
@@ -106,9 +106,9 @@ Return EXACTLY this JSON format:
                 const patientId = req.user?.uid || 'anonymous';
 
                 orchestrationResult = await orchestrateReferral(triageData, patientLocation, referralId, wantAmbulance, patientId);
-                console.log("Orchestration Result:", JSON.stringify(orchestrationResult, null, 2));
+                logger.info("Orchestration Result:", JSON.stringify(orchestrationResult, null, 2));
             } catch (orchError) {
-                console.error("CRITICAL: Orchestration Failed:", orchError);
+                logger.error("CRITICAL: Orchestration Failed:", orchError);
                 // Return a partial object so the UI doesn't completely break
                 orchestrationResult = {
                     error: orchError.message,
@@ -124,9 +124,9 @@ Return EXACTLY this JSON format:
             orchestration: orchestrationResult
         };
 
-        console.log("--- ORCHESTRATION RESULT Keys:", Object.keys(orchestrationResult));
+        logger.info("--- ORCHESTRATION RESULT Keys:", Object.keys(orchestrationResult));
         if (orchestrationResult.hospital) {
-            console.log("--- RECOMMENDED HOSPITAL:", {
+            logger.info("--- RECOMMENDED HOSPITAL:", {
                 name: orchestrationResult.hospital.name,
                 contact: orchestrationResult.hospital.contact,
                 reason: orchestrationResult.hospital.reason
@@ -135,7 +135,7 @@ Return EXACTLY this JSON format:
         res.json(finalResponse);
 
     } catch (error) {
-        console.error("Symptom Analysis Error:", error);
+        logger.error("Symptom Analysis Error:", error);
         res.status(500).json({ message: "Failed to analyze symptoms", error: error.message });
     }
 };

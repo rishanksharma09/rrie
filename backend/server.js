@@ -1,4 +1,5 @@
 import http from 'http';
+import logger from './config/logger.js';
 import { Server } from 'socket.io';
 import express from 'express';
 import app from './app.js';
@@ -32,10 +33,10 @@ const startServer = async () => {
         // 1. Connect to Database FIRST
         await connectDB();
 
-        
+
         const pubClient = redisClient.duplicate();
         const subClient = redisClient.duplicate();
-        
+
         await Promise.all([
             pubClient.connect(),
             subClient.connect()
@@ -45,7 +46,7 @@ const startServer = async () => {
 
         // 2. Start the Server
         server.listen(PORT, () => {
-            console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+            logger.info(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 
             // 3. Initialize Socket.IO after DB is ready
             setIO(io);
