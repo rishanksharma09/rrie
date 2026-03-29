@@ -1,10 +1,10 @@
+import * as Sentry from "@sentry/node";
 import express from 'express';
 import logger from './config/logger.js';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 import routes from './routes/index.js';
 import { apiLimiter } from './middlewares/rateLimitMiddleware.js';
@@ -17,6 +17,7 @@ dotenv.config();
 const app = express();
 
 // Middleware
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -40,6 +41,7 @@ app.get('/', (req, res) => {
 });
 
 // Error Handling
+Sentry.setupExpressErrorHandler(app)
 app.use(notFound);
 app.use(errorHandler);
 

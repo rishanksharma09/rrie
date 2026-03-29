@@ -13,4 +13,8 @@ const getProtected = (req, res) => {
     });
 };
 
-export { getHome, getTest, getProtected };
+const debugSentry = (req, res) => {
+    throw new Error("My first Sentry error!");
+};
+
+export { getHome, getTest, getProtected, debugSentry };
