@@ -8,6 +8,7 @@ import Assignment from '../../models/Assignment.js';
 import { calculateETA } from '../../utils/mapboxUtils.js';
 import { driverSockets } from './socketMaps.js';
 import redisClient from '../../config/redis.js';
+import logger from '../../config/logger.js';
 
 /**
  * Sets up all driver-related socket event handlers

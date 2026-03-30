@@ -1,6 +1,7 @@
 import Hospital from '../models/Hospital.js';
 import Ambulance from '../models/Ambulance.js';
 import Assignment from '../models/Assignment.js';
+import logger from '../config/logger.js';
 
 import { getIO } from '../config/socket.js';
 import { driverSockets } from './socketService.js';
@@ -62,86 +63,65 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
     const requirements = getRequirements(emergency_type);
     logger.info(`[Orchestration] Requirements:`, JSON.stringify(requirements));
 
-    // 2. Fetch Active Facilities
-    const hospitalsRaw = await Hospital.find({ status: { $ne: 'offline' } });
-    const hospitals = hospitalsRaw.map(h => h.toObject());
-    logger.info(`[Orchestration] Found ${hospitals.length} active hospitals.`);
+    // 2. Build Clinical Requirements Match Stage
+    const matchStage = { status: { $ne: 'offline' } };
+    if (requirements.specialists) {
+        requirements.specialists.forEach(spec => {
+            matchStage[`specialists.${spec}`] = true;
+        });
+    }
+    if (requirements.equipment) {
+        requirements.equipment.forEach(eq => {
+            matchStage[`equipment.${eq}`] = true;
+        });
+    }
+    if (requirements.beds) {
+        requirements.beds.forEach(bedType => {
+            matchStage[`beds.${bedType}`] = { $gt: 0 };
+        });
+    }
 
-    // 3. Filter & Score Hospitals
-    logger.info(`[Orchestration] Referral ${referralId} - Step 3: Scoring hospitals...`);
-    const scoredHospitals = hospitals.map(hospital => {
-        // --- 3a. Capability Filtering (Hard Filter) ---
-        let capabilityMatch = true;
-        let missingCapabilities = [];
+    // 3. Fetch, Filter, and Score Hospitals via MongoDB Aggregation ($geoNear)
+    // GeoJSON [longitude, latitude]
+    const patientCoords = [parseFloat(patientLocation.lng), parseFloat(patientLocation.lat)];
+    
+    logger.info(`[Orchestration] SEARCHING FOR: Coord=${JSON.stringify(patientCoords)}, Query=${JSON.stringify(matchStage)}`);
 
-        // Check Specialists
-        if (requirements.specialists) {
-            requirements.specialists.forEach(spec => {
-                if (!hospital.specialists[spec]) {
-                    capabilityMatch = false;
-                    missingCapabilities.push(spec);
+    const scoredHospitals = await Hospital.aggregate([
+        {
+            $geoNear: {
+                near: { type: "Point", coordinates: patientCoords },
+                distanceField: "distance",
+                spherical: true,
+                distanceMultiplier: 0.001, // Convert meters to kilometers
+                query: matchStage
+            }
+        },
+        {
+            $addFields: {
+                // Formula: 100 - (distance * 10) + (icuAvailable * 1) - statusPenalty
+                score: {
+                    $subtract: [
+                        { $add: [
+                            100,
+                            { $multiply: [{ $ifNull: ["$beds.icuAvailable", 0] }, 1] }
+                        ]},
+                        { $add: [
+                            { $multiply: ["$distance", 10] },
+                            { $cond: [ { $eq: ["$status", "overloaded"] }, 50, 0 ] }
+                        ]}
+                    ]
                 }
-            });
-        }
+            }
+        },
+        { $sort: { score: -1 } }
+    ]);
 
-        // Check Equipment
-        if (requirements.equipment) {
-            requirements.equipment.forEach(eq => {
-                if (!hospital.equipment[eq]) {
-                    capabilityMatch = false;
-                    missingCapabilities.push(eq);
-                }
-            });
-        }
-
-        // Check Beds
-        if (requirements.beds) {
-            requirements.beds.forEach(bedType => {
-                if (!hospital.beds || !hospital.beds[bedType] || hospital.beds[bedType] <= 0) {
-                    capabilityMatch = false;
-                    missingCapabilities.push(bedType);
-                }
-            });
-        }
-
-        if (!capabilityMatch) {
-            logger.info(`[Orchestration] Hospital ${hospital.name} EXCLUDED. Missing: ${missingCapabilities.join(', ')}`);
-            return { id: hospital._id, eligible: false, reason: `Missing: ${missingCapabilities.join(', ')}` };
-        }
-
-        // --- 3b. Scoring Logic ---
-        const distance = calculateDistance(
-            patientLocation.lat, patientLocation.lng,
-            hospital.location.lat, hospital.location.lng
-        );
-
-        const icuAvailable = hospital.beds.icuAvailable || 0;
-        const statusPenalty = hospital.status === 'overloaded' ? 50 : 0;
-
-        // Formula: Start at 100
-        // - 10 points per km (Very heavy penalty for distance)
-        // + 1 point per ICU bed (Small bonus for capacity)
-        // - 50 points if overloaded
-        let score = 100 - (distance * 10) + (icuAvailable * 1) - statusPenalty;
-
-        return {
-            id: hospital._id,
-            name: hospital.name,
-            eligible: true,
-            location: hospital.location,
-            address: hospital.location?.address, // Flat fallback
-            distance: parseFloat(distance.toFixed(2)),
-            contact: hospital.contactNumber || hospital.phone || hospital.contact,
-            contactNumber: hospital.contactNumber || hospital.phone || hospital.contact, // Extra redundancy
-            icuAvailable,
-            status: hospital.status,
-            score: parseFloat(score.toFixed(2))
-        };
-    }).filter(h => h.eligible);
-
-    // Sort by Score Descending
-    scoredHospitals.sort((a, b) => b.score - a.score);
-    logger.info(`[Orchestration] Scored ${scoredHospitals.length} eligible hospitals.`);
+    logger.info(`[Orchestration] Aggregation Results: Found ${scoredHospitals.length} hospitals.`);
+    if (scoredHospitals.length === 0) {
+        const totalActive = await Hospital.countDocuments({ status: { $ne: 'offline' } });
+        logger.warn(`[Orchestration] DIAGNOSTIC: Total active hospitals in DB: ${totalActive}. None matched clinical criteria.`);
+    }
 
     const bestHospital = scoredHospitals.length > 0 ? scoredHospitals[0] : null;
 
@@ -149,7 +129,15 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
         logger.warn("[Orchestration] No eligible hospital found!");
         return { error: "No eligible facility found within range matching capabilities." };
     }
+
+    // Map result fields for downstream compatibility
+    bestHospital.id = bestHospital._id;
+    bestHospital.distance = parseFloat(bestHospital.distance.toFixed(2));
+    bestHospital.score = parseFloat(bestHospital.score.toFixed(2));
+    bestHospital.contact = bestHospital.contactNumber;
+
     logger.info(`[Orchestration] Best Hospital: ${bestHospital.name} (Score: ${bestHospital.score})`);
+
 
     // 4. Find Nearest Ambulance (Conditional) USING REDIS
     logger.info(`[Orchestration] Referral ${referralId} - Step 4: Finding ambulance (Requested: ${wantAmbulance})...`);
@@ -200,14 +188,15 @@ export const orchestrateReferral = async (triageData, patientLocation, referralI
                 name: bestHospital.name,
                 contact: bestHospital.contact,
                 location: {
-                    lat: bestHospital.location.lat,
-                    lng: bestHospital.location.lng,
-                    address: bestHospital.location.address
+                    lat: bestHospital.location.coordinates[1],
+                    lng: bestHospital.location.coordinates[0],
+                    address: bestHospital.address
                 },
                 distance: bestHospital.distance,
                 score: bestHospital.score,
                 reason: `Best capability match with score ${bestHospital.score} (Dist: ${bestHospital.distance}km, ICU: ${bestHospital.icuAvailable})`
             },
+
             assignedAmbulance: null, // Driver will accept via Socket
             status: wantAmbulance ? 'Pending' : 'Referral Only'
         });

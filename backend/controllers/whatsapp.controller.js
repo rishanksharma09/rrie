@@ -1,5 +1,6 @@
 import twilio from "twilio";
 import axios from "axios";
+import logger from "../config/logger.js";
 
 const MessagingResponse = twilio.twiml.MessagingResponse;
 

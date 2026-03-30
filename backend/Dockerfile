@@ -16,8 +16,8 @@ COPY . .
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+    CMD node -e "fetch('http://localhost:5000/').then(r => {if (r.status !== 200) process.exit(1)}).catch(() => process.exit(1))"
+
 
 # Start the application
 CMD ["npm", "start"]

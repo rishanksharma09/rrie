@@ -18,10 +18,21 @@ const hospitalSchema = new mongoose.Schema({
         required: true
     },
     location: {
-        lat: { type: Number, required: true },
-        lng: { type: Number, required: true },
-        address: { type: String, required: true }
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            required: true
+        }
     },
+    address: { 
+        type: String, 
+        required: true 
+    },
+
     contactNumber: {
         type: String,
         required: true
@@ -53,11 +64,10 @@ const hospitalSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Note: If geospatial queries are needed later, we might need a separate 2dsphere index field or transformation.
-// For now, removing the 2dsphere index on 'location' as it's no longer a GeoJSON object.
-
 // Index for geospatial queries
+hospitalSchema.index({ location: '2dsphere' });
 
 const Hospital = mongoose.model('Hospital', hospitalSchema);
+
 
 export default Hospital;
