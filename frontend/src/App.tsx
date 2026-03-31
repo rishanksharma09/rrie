@@ -12,6 +12,7 @@ import AmbulancePortal from './pages/AmbulancePortal';
 import AmbulanceLogin from './pages/AmbulanceLogin';
 import HospitalLogin from './pages/HospitalLogin';
 import NetworkExplorer from './pages/NetworkExplorer';
+import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
 
 function App() {
   const { setUser, setLoading } = useAuthStore();
@@ -32,6 +33,7 @@ function App() {
 
   return (
     <LanguageProvider>
+      <MaintenanceOverlay />
       <Router>
         <Navbar />
         <Routes>

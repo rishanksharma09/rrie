@@ -32,6 +32,7 @@ export const initSocketService = async (io) => {
         setupHospitalSocketHandlers(socket, io, hospitalSockets);
         setupUserSocketHandlers(socket, userSockets);
 
+
         // Handle disconnection cleanup
         socket.on('disconnect', () => {
             logger.info(`[Socket] Client disconnected: ${socket.id}`);

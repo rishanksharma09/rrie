@@ -17,7 +17,7 @@ import logger from '../../config/logger.js';
  * @param {Map} userSockets - Map of user connections
  * @returns {Function} Setup function
  */
-export const setupDriverSocketHandlers = (socket, io, userSockets) => {
+export const  setupDriverSocketHandlers = (socket, io, userSockets) => {
     // Driver registration
     socket.on('register_driver', handleDriverRegistration(socket));
 
